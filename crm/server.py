@@ -2,19 +2,13 @@
 
 from contextlib import asynccontextmanager
 import os
-from typing import Literal
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from dotenv import load_dotenv
 from .store import Store
-from .server_types import ReviewChange
+from .server_types import DealAction, ReviewChange
 
 load_dotenv()
-
-
-class Action(BaseModel):
-    action: Literal["schedule_kickoff", "request_review_update"]
 
 
 def create_app(path=None):
@@ -41,6 +35,12 @@ def create_app(path=None):
             "Bearer " + os.getenv("CRM_ADMIN_TOKEN", "workshop-human"),
         }:
             raise HTTPException(401, "CRM token required")
+        return (
+            "human"
+            if authorization
+            == "Bearer " + os.getenv("CRM_ADMIN_TOKEN", "workshop-human")
+            else "agent"
+        )
 
     def human(authorization: str = Header(default="")):
         if authorization != "Bearer " + os.getenv("CRM_ADMIN_TOKEN", "workshop-human"):
@@ -79,37 +79,26 @@ def create_app(path=None):
     @app.post(
         "/workspaces/{workspace}/deals/{deal_id}/write", dependencies=[Depends(reader)]
     )
-    def write(workspace: str, deal_id: str, body: Action, db=Depends(store)):
-        return db.action(workspace, deal_id, body.action, direct=True)
-
-    @app.post(
-        "/workspaces/{workspace}/deals/{deal_id}/propose",
-        dependencies=[Depends(reader)],
-    )
-    def propose(workspace: str, deal_id: str, body: Action, db=Depends(store)):
-        return db.action(workspace, deal_id, body.action)
-
-    @app.get("/workspaces/{workspace}/proposals/{pid}", dependencies=[Depends(human)])
-    def proposal(workspace: str, pid: str, db=Depends(store)):
-        return db.proposal(workspace, pid)
-
-    @app.post(
-        "/workspaces/{workspace}/proposals/{pid}/approve", dependencies=[Depends(human)]
-    )
-    def approve(workspace: str, pid: str, db=Depends(store)):
-        return db.approve(workspace, pid)
-
-    @app.post(
-        "/workspaces/{workspace}/proposals/{pid}/promote", dependencies=[Depends(human)]
-    )
-    def promote(workspace: str, pid: str, db=Depends(store)):
-        return db.promote(workspace, pid)
+    def write(
+        workspace: str,
+        deal_id: str,
+        body: DealAction,
+        actor=Depends(reader),
+        db=Depends(store),
+    ):
+        return db.action(workspace, deal_id, body.action, actor=actor)
 
     @app.post(
         "/workspaces/{workspace}/deals/{deal_id}/review", dependencies=[Depends(human)]
     )
     def review(workspace: str, deal_id: str, body: ReviewChange, db=Depends(store)):
-        return db.set_review(workspace, deal_id, body.status)
+        return db.set_review(
+            workspace,
+            deal_id,
+            body.status,
+            valid_until=body.valid_until.isoformat() if body.valid_until else None,
+            actor="human",
+        )
 
     from .ui import install_ui
 

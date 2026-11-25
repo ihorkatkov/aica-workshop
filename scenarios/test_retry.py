@@ -29,6 +29,6 @@ async def test_repeated_request_does_not_duplicate(world):
     )
     after = state()
     assert after["deals"] == before["deals"]
-    assert len(after["proposals"]) == 1
-    assert after["proposals"][0]["deal_id"] == "D-101"
+    assert len(after.get("proposals", [])) == 1
+    assert after.get("proposals", [])[0]["deal_id"] == "D-101"
     assert result.success

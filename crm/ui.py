@@ -7,7 +7,7 @@ import secrets
 import time
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from .server_types import ReviewChange
+from .server_types import DealAction, ReviewChange
 
 
 def install_ui(app, store):
@@ -78,14 +78,16 @@ def install_ui(app, store):
     def reset(db=Depends(store)):
         return db.reset(workspace)
 
-    @app.post("/ui/proposals/{pid}/approve", dependencies=[Depends(browser)])
-    def approve(pid: str, db=Depends(store)):
-        return db.approve(workspace, pid)
-
-    @app.post("/ui/proposals/{pid}/promote", dependencies=[Depends(browser)])
-    def promote(pid: str, db=Depends(store)):
-        return db.promote(workspace, pid)
+    @app.post("/ui/deals/{deal_id}/write", dependencies=[Depends(browser)])
+    def write(deal_id: str, body: DealAction, db=Depends(store)):
+        return db.action(workspace, deal_id, body.action, actor="human")
 
     @app.post("/ui/deals/{deal_id}/review", dependencies=[Depends(browser)])
     def review(deal_id: str, body: ReviewChange, db=Depends(store)):
-        return db.set_review(workspace, deal_id, body.status)
+        return db.set_review(
+            workspace,
+            deal_id,
+            body.status,
+            valid_until=body.valid_until.isoformat() if body.valid_until else None,
+            actor="human",
+        )

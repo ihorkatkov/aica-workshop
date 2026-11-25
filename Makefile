@@ -11,10 +11,10 @@ LAB = docker compose run --rm -T lab
 TEST = docker compose run --rm -T --entrypoint python lab -m pytest
 endif
 
-.PHONY: help setup pull web ui crm preflight reset run state inspect approve promote set-review check-policy test scenarios verify down
+.PHONY: help setup pull web ui crm preflight reset run state set-review check-policy test scenarios verify down
 help:
 	@printf '%s\n' 'make setup              Start the workshop and check model access' \
-	 'make ui                 Start the CRM approval desk' \
+	 'make ui                 Start the CRM' \
 	 'make web                Start ADK chat' \
 	 'make reset              Restore CRM data (keeps your code)' \
 	 'make scenarios review   Test review handling' \
@@ -42,7 +42,7 @@ ifeq ($(HOST),1)
 	@$(PYTHON) -m uvicorn crm.server:app --host 127.0.0.1 --port 8001 --reload
 else
 	@docker compose up -d crm
-	@printf 'CRM approval desk: http://localhost:8001\n'
+	@printf 'CRM: http://localhost:8001\n'
 endif
 preflight:
 	@$(LAB) --workspace $(WORKSPACE) preflight
@@ -50,9 +50,6 @@ reset state:
 	@$(LAB) --workspace $(WORKSPACE) $@
 run:
 	@$(LAB) --workspace $(WORKSPACE) run "$$PROMPT"
-inspect approve promote:
-	@test -n "$$ID" || { echo 'Supply ID=proposal_id'; exit 2; }
-	@$(LAB) --workspace $(WORKSPACE) $@ "$$ID"
 set-review:
 	@$(LAB) --workspace $(WORKSPACE) set-review "$$DEAL" "$$VALUE"
 check-policy:

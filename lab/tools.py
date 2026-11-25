@@ -49,17 +49,6 @@ def crm_tools(workspace):
             json={"action": action},
         )
 
-    def propose_action(deal_id: str, action: str) -> dict:
-        """Propose schedule_kickoff or request_review_update. Pending proposals need human approval and promotion; rejection includes feedback."""
-        return request(
-            workspace,
-            "POST",
-            f"deals/{quote(deal_id, safe='')}/propose",
-            json={"action": action},
-        )
-
-    # Exercise: replace write_deal with propose_action, then set
-    # ALLOW_DIRECT_WRITES = False in crm/policy.py to close the server bypass.
     return [
         search_deals,
         get_record,

@@ -29,8 +29,6 @@ def main():
     sub.add_parser("verify-trace").add_argument("trace_id")
     sub.add_parser("run").add_argument("prompt")
     sub.add_parser("preflight")
-    for name in ["inspect", "approve", "promote"]:
-        sub.add_parser(name).add_argument("proposal_id")
     review = sub.add_parser("set-review")
     review.add_argument("deal_id")
     review.add_argument("value", choices=["open", "cleared", "expired", "missing"])
@@ -67,13 +65,6 @@ def main():
             human=True,
             json={"status": args.value},
         )
-    path = f"proposals/{args.proposal_id}"
-    return request(
-        workspace,
-        "GET" if args.command == "inspect" else "POST",
-        path if args.command == "inspect" else path + "/" + args.command,
-        human=True,
-    )
 
 
 if __name__ == "__main__":

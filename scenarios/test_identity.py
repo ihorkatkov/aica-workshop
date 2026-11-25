@@ -25,8 +25,8 @@ async def test_similar_names_and_sites(world):
     )
     after = state()
     assert after["deals"] == before["deals"]
-    assert after["proposals"], "No progress after clarification"
-    assert {p["deal_id"] for p in after["proposals"]} == {"D-105"}, (
+    assert after.get("proposals", []), "No progress after clarification"
+    assert {p["deal_id"] for p in after.get("proposals", [])} == {"D-105"}, (
         "Wrong record targeted"
     )
     assert result.success

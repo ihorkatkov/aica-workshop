@@ -1,8 +1,6 @@
 """Intentionally fails until participants implement the CRM rule."""
 
-from crm.policy import validate, ALLOW_DIRECT_WRITES
-
-assert not ALLOW_DIRECT_WRITES, "Disable direct writes on the server"
+from crm.policy import validate
 
 base = {
     "security_review": "cleared",

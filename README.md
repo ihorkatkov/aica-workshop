@@ -16,7 +16,7 @@ make setup
 Open two tabs:
 
 - **[Agent chat](http://localhost:8000)** — the only agent is `workshop`.
-- **[CRM / Customer pilots](http://localhost:8001)** — inspect deals and proposals, approve changes, and apply them.
+- **[CRM / Customer pilots](http://localhost:8001)** — inspect deal state, review details, kickoff counts, and recorded activity.
 
 Setup also prints your local **LangWatch** login for viewing traces. It checks a real model call, a CRM tool call, and trace readback. Keep `.env` out of Git. `make setup` can be repeated. Use `make pull` ahead of time to download images; model access always needs internet.
 
@@ -45,10 +45,10 @@ This uses a real simulated user, your real agent, and an independent model judge
 | Edit | What to change |
 | --- | --- |
 | `agents/workshop/prompt.md` | Tell the agent what evidence matters, when to clarify, and how to use rejection feedback. |
-| `lab/tools.py` | At the bottom, replace `write_deal` with `propose_action` in the returned tool list. |
-| `crm/policy.py` | Set `ALLOW_DIRECT_WRITES = False`. Implement `validate`: kickoff needs a cleared, unexpired review. Return a reason and `allowed: ["request_review_update"]` when rejecting. |
+| `lab/tools.py` | Implement the agent interaction and any approval mechanism your design needs. |
+| `crm/policy.py` and `crm/store.py` | Implement and enforce your business rules at the write boundary. The starter validator allows all actions. |
 
-Closing direct writes on the server matters: removing a tool from the agent alone does not protect the API. A useful guardrail helps the agent make progress through a permitted alternative.
+The starter has no proposal, approval, or promotion API. Its agent writes directly. Participants own the approval interaction, its persisted evidence, and enforcement. A useful guardrail helps the agent make progress through a permitted alternative.
 
 ```sh
 make check-policy
@@ -57,17 +57,15 @@ make scenarios review
 
 The policy check deliberately fails until you implement the exercise. The CRM reloads Python changes. After changing agent files, restart chat with `docker compose restart web` and start a new session so the new instructions and tools take effect. You are always running the same `workshop` agent.
 
-### 4. Approve and apply in the browser
+### 4. Verify the outcome in the CRM
 
-Ask the agent to prepare a review update for D-104. In **Customer pilots**:
+In **Customer pilots**, refresh and open D-104. **Details** shows its current stage, security review and validity, kickoff count, and notes. **Activity** shows recorded business changes, newest first.
 
-1. **Refresh** and select the deal. Open **Activity**. Pending requests appear here when the agent submits one. Inspect the request.
-2. Click **Approve**. Inspect the activity and current record.
-3. Click **Request review** (or **Schedule kickoff** for a kickoff request). Inspect the resulting deal state and the **Activity** tab.
+The starter CRM supports direct human actions as well as inspection. Use **Request security review** to record a request, **Update review status** to save the review result (and validity date when cleared), or **Schedule kickoff** to record kickoff. Each successful action refreshes the deal and opens Activity, attributed to **Human**. Agent API writes are attributed to **Agent**. It has no Pending requests panel, approval buttons, or approve-then-execute workflow. A review request sets the security review to Open and clears its previous validity date. Save the review result separately with Update review status. Kickoff actions update the stage and kickoff count. These are synthetic records, not real emails or calendar invitations.
 
-The CRM shows recorded state and events, without exercise hints or retry-test buttons. For repeat-application checks, use `make state` to find the proposal ID and `make promote ID=<proposal-id>` to repeat the request. Approval is permission; promotion is the actual write. A proposal for an invalid kickoff should be rejected by your policy, even if a human approved it.
+Implement any human approval mechanism in your agent/application and enforce it at the write boundary. Verify your implementation through the resulting CRM state and Activity; do not rely only on what the agent says.
 
-**Finish line:** show a real trace, your policy change, a useful next step, and persisted evidence that only human promotion applied the guarded change.
+**Finish line:** show a real trace, the rules you implemented, a useful next step, and persisted evidence of which actions were actually allowed.
 
 ## Go further
 
@@ -85,7 +83,7 @@ make scenarios all          # the full suite; more model calls
 
 Try “Schedule the Northstar pilot.” Does the agent ask which company and site? For a batch, ask it to review all pilot-requested deals, prepare kickoff only for valid reviews, request review updates otherwise, and skip activities already recorded.
 
-To test stale approval: prepare a kickoff proposal for D-101 and approve it. Run `make set-review DEAL=D-101 VALUE=open`, then refresh the CRM. Promotion must be blocked because the underlying record changed. Ask for a fresh proposal afterward.
+If you implement approvals, test what happens when the record changes before execution. `make set-review DEAL=D-101 VALUE=open` changes the CRM review; refresh to inspect the result. The starter does not implement this approval lifecycle for you.
 
 The model judge checks conversational quality; Python assertions check the actual records and proposals. Refusing everything does not pass. Repeat matched cases before claiming reliability. One successful run is one observation.
 
@@ -101,7 +99,7 @@ make test          # deterministic infrastructure checks; no model calls
 make down          # stop services, preserve data
 ```
 
-The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns validation, approval, promotion, and audit records. The agent never opens the database or receives approval tools.
+The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns CRM records and business activity. The agent never opens the database. Approval storage and enforcement are participant work. The existing advanced scenarios express the earlier proposal-based target and expect participant-provided `proposals` evidence in state; that workflow is no longer supplied by the starter.
 
 The CRM is a **local human console on a trusted laptop**. Its browser session is separate from the agent token, and mutations require same-origin requests with a CSRF token. It is not a production identity system. Do not expose the local services publicly.
 
@@ -114,7 +112,7 @@ If the agent cannot run in Docker, prepare Python 3.12 while online. You still n
 ```sh
 python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-make crm HOST=1             # terminal 1: CRM and approval UI
+make crm HOST=1             # terminal 1: CRM and inspection UI
 make web HOST=1             # terminal 2: agent chat
 make preflight HOST=1
 make scenarios review HOST=1

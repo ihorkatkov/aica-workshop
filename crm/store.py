@@ -1,9 +1,8 @@
-"""SQLite transactions own validation, approvals and synthetic effects."""
+"""SQLite storage for synthetic CRM records and recorded activity."""
 
 import json
-from pathlib import Path
-import secrets
 import sqlite3
+from pathlib import Path
 
 from . import policy
 
@@ -22,8 +21,6 @@ class Store:
           CREATE TABLE IF NOT EXISTS workspaces(id TEXT PRIMARY KEY);
           CREATE TABLE IF NOT EXISTS records(workspace TEXT, id TEXT, kind TEXT, data TEXT,
             PRIMARY KEY(workspace,id));
-          CREATE TABLE IF NOT EXISTS proposals(id TEXT PRIMARY KEY, workspace TEXT,
-            deal_id TEXT, action TEXT, revision INTEGER, status TEXT);
           CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, workspace TEXT,
             event TEXT, detail TEXT);
         """)
@@ -68,8 +65,13 @@ class Store:
     def reset(self, workspace):
         def txn():
             self.db.execute("INSERT OR REPLACE INTO workspaces VALUES(?)", (workspace,))
-            for table in ("records", "proposals", "audit"):
+            for table in ("records", "audit"):
                 self.db.execute(f"DELETE FROM {table} WHERE workspace=?", (workspace,))
+            # A reset also clears obsolete request data from older workshop databases.
+            if self.db.execute(
+                "SELECT 1 FROM sqlite_master WHERE name='proposals'"
+            ).fetchone():
+                self.db.execute("DELETE FROM proposals WHERE workspace=?", (workspace,))
             fixture = json.loads(FIXTURE.read_text())
             for kind in ("companies", "contacts", "deals"):
                 for record in fixture[kind]:
@@ -114,13 +116,6 @@ class Store:
         return {
             "workspace": self.require_workspace(workspace),
             "deals": self.deals(workspace),
-            "proposals": [
-                dict(r)
-                for r in self.db.execute(
-                    "SELECT * FROM proposals WHERE workspace=? ORDER BY rowid",
-                    (workspace,),
-                )
-            ],
             "audit": [
                 {**dict(r), "detail": json.loads(r["detail"])}
                 for r in self.db.execute(
@@ -129,142 +124,72 @@ class Store:
             ],
         }
 
-    def validate(self, workspace, record, action):
-        return policy.validate(record, action)
-
-    def apply(self, workspace, record, action):
-        # Guarded promotion is also a no-op when the business effect already exists.
-        field = "kickoffs" if action == "schedule_kickoff" else "review_requests"
-        if record[field]:
-            return False
-        record[field] += 1
-        record["revision"] += 1
-        if action == "schedule_kickoff":
-            record["stage"] = "kickoff_scheduled"
-        self.save(workspace, "deals", record)
-        return True
-
-    def action(self, workspace, deal_id, action, direct=False):
+    def action(self, workspace, deal_id, action, *, actor="agent"):
         if action not in ACTIONS:
-            return {"status": "rejected", "code": "UNKNOWN_ACTION"}
+            raise ValueError("Unknown CRM action")
 
         def txn():
             record = self.get(workspace, deal_id)
             if "security_review" not in record:
                 raise ValueError("Expected a deal ID")
-            if direct:
-                if not policy.ALLOW_DIRECT_WRITES:
-                    return {"status": "rejected", "code": "DIRECT_WRITE_DISABLED"}
-                # Intentionally flawed: trusts the caller; repeated writes duplicate effects.
-                field = (
-                    "kickoffs" if action == "schedule_kickoff" else "review_requests"
-                )
-                record[field] += 1
-                record["revision"] += 1
-                if action == "schedule_kickoff":
-                    record["stage"] = "kickoff_scheduled"
-                self.save(workspace, "deals", record)
-                self.log(
-                    workspace, "unsafe_write", {"deal_id": deal_id, "action": action}
-                )
-                return {"status": "applied_without_checks", "record": record}
-            error = self.validate(workspace, record, action)
+            error = policy.validate(record, action)
             if error:
-                self.log(
-                    workspace,
-                    "rejected",
-                    {"deal_id": deal_id, "action": action, **error},
-                )
                 return {"status": "rejected", **error}
+            # Starter behavior: participants implement authorization, validation and retries.
             field = "kickoffs" if action == "schedule_kickoff" else "review_requests"
-            if record[field]:
-                return {
-                    "status": "no_change",
-                    "reason": "Activity already recorded",
-                    "record": record,
-                }
-            existing = self.db.execute(
-                "SELECT * FROM proposals WHERE workspace=? AND deal_id=? AND action=? AND revision=? AND status IN ('pending','approved')",
-                (workspace, deal_id, action, record["revision"]),
-            ).fetchone()
-            if existing:
-                return dict(existing)
-            pid = secrets.token_hex(6)
-            self.db.execute(
-                "INSERT INTO proposals VALUES(?,?,?,?,?,'pending')",
-                (pid, workspace, deal_id, action, record["revision"]),
-            )
+            fields = ["stage", field]
+            if action == "request_review_update":
+                fields += ["security_review", "review_valid_until"]
+            before = {key: record[key] for key in fields}
+            record[field] += 1
+            record["revision"] += 1
+            if action == "schedule_kickoff":
+                record["stage"] = "kickoff_scheduled"
+            else:
+                record["security_review"] = "open"
+                record["review_valid_until"] = None
+            self.save(workspace, "deals", record)
             self.log(
                 workspace,
-                "proposed",
-                {"proposal_id": pid, "deal_id": deal_id, "action": action},
+                "deal_updated",
+                {
+                    "deal_id": deal_id,
+                    "action": action,
+                    "actor": actor,
+                    "before": before,
+                    "after": {key: record[key] for key in fields},
+                },
             )
-            return self.proposal(workspace, pid)
+            return {"status": "applied", "record": record}
 
         return self.transaction(txn)
 
-    def proposal(self, workspace, pid):
-        row = self.db.execute(
-            "SELECT * FROM proposals WHERE workspace=? AND id=?", (workspace, pid)
-        ).fetchone()
-        if not row:
-            raise KeyError("Proposal not found")
-        return dict(row)
-
-    def approve(self, workspace, pid):
-        def txn():
-            proposal = self.proposal(workspace, pid)
-            if proposal["status"] != "pending":
-                return {"status": "rejected", "code": "NOT_PENDING"}
-            self.db.execute("UPDATE proposals SET status='approved' WHERE id=?", (pid,))
-            self.log(workspace, "approved", {"proposal_id": pid})
-            return self.proposal(workspace, pid)
-
-        return self.transaction(txn)
-
-    def promote(self, workspace, pid):
-        def txn():
-            proposal = self.proposal(workspace, pid)
-            if proposal["status"] == "applied":
-                return {"status": "already_applied", "proposal_id": pid}
-            if proposal["status"] != "approved":
-                return {"status": "rejected", "code": "NOT_APPROVED"}
-            record = self.get(workspace, proposal["deal_id"])
-            if record["revision"] != proposal["revision"]:
-                self.db.execute(
-                    "UPDATE proposals SET status='stale' WHERE id=?", (pid,)
-                )
-                self.log(workspace, "stale", {"proposal_id": pid})
-                return {"status": "rejected", "code": "STALE_STATE"}
-            error = self.validate(workspace, record, proposal["action"])
-            if error:
-                return {"status": "rejected", **error}
-            changed = self.apply(workspace, record, proposal["action"])
-            self.db.execute("UPDATE proposals SET status='applied' WHERE id=?", (pid,))
-            self.log(
-                workspace,
-                "promoted",
-                {"proposal_id": pid, "deal_id": record["id"], "changed": changed},
-            )
-            return {
-                "status": "applied" if changed else "no_change",
-                "proposal_id": pid,
-                "record": record,
-            }
-
-        return self.transaction(txn)
-
-    def set_review(self, workspace, deal_id, status):
+    def set_review(
+        self, workspace, deal_id, status, *, valid_until=None, actor="human"
+    ):
         def txn():
             record = self.get(workspace, deal_id)
+            if "security_review" not in record:
+                raise ValueError("Expected a deal ID")
+            before = record["security_review"]
             record.update(
                 security_review=status,
-                review_valid_until="2026-12-31" if status == "cleared" else None,
+                review_valid_until=(valid_until or "2026-12-31")
+                if status == "cleared"
+                else None,
                 revision=record["revision"] + 1,
             )
             self.save(workspace, "deals", record)
             self.log(
-                workspace, "review_changed", {"deal_id": deal_id, "status": status}
+                workspace,
+                "review_changed",
+                {
+                    "deal_id": deal_id,
+                    "status": status,
+                    "previous_status": before,
+                    "actor": actor,
+                    "valid_until": record["review_valid_until"],
+                },
             )
             return record
 

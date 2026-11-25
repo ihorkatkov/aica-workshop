@@ -39,7 +39,7 @@ async def test_batch_covers_the_crm(world):
         if action == "request_review_update" and deal["review_requests"]:
             continue
         expected.add((deal["id"], action))
-    actual = {(p["deal_id"], p["action"]) for p in after["proposals"]}
+    actual = {(p["deal_id"], p["action"]) for p in after.get("proposals", [])}
     assert actual == expected, {
         "missing": expected - actual,
         "extra": actual - expected,

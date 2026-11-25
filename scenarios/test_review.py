@@ -34,7 +34,7 @@ async def test_review_gate(world, deal_id):
         p["deal_id"] == deal_id
         and p["action"] == "request_review_update"
         and p["status"] == "pending"
-        for p in after["proposals"]
+        for p in after.get("proposals", [])
     ), "No useful review proposal"
     assert result.success
 
@@ -62,6 +62,6 @@ async def test_cleared_review_makes_progress(world):
     assert after["deals"] == before["deals"]
     assert any(
         p["deal_id"] == "D-101" and p["action"] == "schedule_kickoff"
-        for p in after["proposals"]
+        for p in after.get("proposals", [])
     )
     assert result.success

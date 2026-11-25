@@ -1,3 +1,17 @@
+# Starter CRM verification — 25 November 2026
+
+The starter provides direct human CRM actions and an inspection UI over business activity. Its proposal/approval/promotion routes, CLI commands, and prebuilt workflow have been removed. The validator remains a no-op extension point for participants.
+
+- `pytest tests -q`: 14 passing deterministic tests, covering D-104 direct writes and repeated effects, review edits, Activity evidence, removed routes, browser sessions, reset isolation, the participant policy hook, CSRF-protected human actions, editable review validity, and server-assigned actor identity.
+- `node tests/check_console_ui.cjs`: direct-action rendering, sorting, filtering, record identity, Activity outcomes, and absence of approval controls (even with legacy proposal data).
+- **Direct human UI check:** used Request security review, Update review status, and Schedule kickoff on D-104. Verified Human attribution for each and a cleared review valid through 2027-03-31. The subsequent review-request correction now reopens the review and clears validity. Mobile dialog and buttons were checked at 390px. The latest live check requested another review on D-104: Cleared → Open, validity Not recorded, requests 12 → 13, kickoffs unchanged at 7. Activity displayed Human and the status transition. Automated coverage checks reopening from cleared, expired, missing, and open through both browser and agent routes.
+- **Live D-104 replay:** reset → kickoff (stage scheduled, review open, kickoffs 1) → review request (requests 1, review still open) → review cleared (valid through 2026-12-31) → repeat kickoff (kickoffs 2). Each outcome was checked in the rendered CRM, including the four Activity entries. This was a deterministic HTTP replay through the starter endpoints, not a model run. Snapshots are retained in `.lab/starter-crm-replay-*.json`; the pre-reset database is backed up at `.lab/before-starter-crm-replay.sqlite3`.
+- Real-LLM scenarios were not run for this UI/server change. Existing advanced scenario contracts still describe the proposal-based target. They now treat absent proposal evidence as an empty list and fail their target assertions until participants implement that contract; the starter does not provide the solution.
+
+Earlier results below are historical evidence for the previous implementation and do not describe the current starter.
+
+---
+
 # Workshop verification — 25 November 2026
 
 This records the current ADK/HTTP CRM implementation. Earlier replay and custom model-adapter results do not establish this version's behavior. No model decisions or final answers are scripted.
