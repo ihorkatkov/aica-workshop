@@ -11,7 +11,7 @@ from .server_types import DealAction, ReviewChange
 load_dotenv()
 
 
-def create_app(path=None):
+def create_app(path=None, *, mcp_workspace="workshop", call_log=None):
     path = path or os.getenv("CRM_DB", ".lab/crm.sqlite3")
 
     @asynccontextmanager
@@ -21,7 +21,8 @@ def create_app(path=None):
                 store.require_workspace("workshop")
             except KeyError:
                 store.reset("workshop")
-        yield
+        async with mcp.session_manager.run():
+            yield
 
     app = FastAPI(title="AICA synthetic CRM", lifespan=lifespan)
 
@@ -102,6 +103,9 @@ def create_app(path=None):
 
     from .ui import install_ui
 
+    from .mcp import install_mcp
+
+    mcp = install_mcp(app, mcp_workspace, call_log)
     install_ui(app, store)
     return app
 

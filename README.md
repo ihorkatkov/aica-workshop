@@ -20,6 +20,12 @@ Open two tabs:
 
 Setup also prints your local **LangWatch** login for viewing traces. It checks a real model call, a CRM tool call, and trace readback. Keep `.env` out of Git. `make setup` can be repeated. Use `make pull` ahead of time to download images; model access always needs internet.
 
+## Use Claude Code or Codex
+
+After `make setup`, start your signed-in `claude` or `codex` CLI from the workshop repository root. Accept the client’s workspace trust or CRM tool approval if prompted. The project config connects the CLI to the same local CRM workspace you see in **Customer pilots**.
+
+Try “Use the CRM to read D-104. What is its security review status?” Refresh **Customer pilots** to inspect changes after write requests. The default ADK chat still works as before.
+
 ## The exercise
 
 ### 1. See what the agent does
