@@ -46,7 +46,7 @@ If time slips, pair up around a working environment and cut the batch and stale-
 
 ## Environment and distribution
 
-- **Source:** the workshop repository, README and TESTING. `agents/` contains standard ADK agents and prompts, `lab/tools.py` the HTTP clients, `crm/` the server and policy exercise, `fixtures/` the CRM world, and `scenarios/` the LangWatch Scenario tests.
+- **Source:** the workshop repository and README. `agents/` contains standard ADK agents and prompts, `lab/tools.py` the HTTP clients, `crm/` the server and policy exercise, `fixtures/` the CRM world, and `scenarios/` the LangWatch Scenario tests.
 - **Local services:** Docker Compose starts LangWatch, the CRM, and ADK Web. `make setup` prepares the account/project, checks telemetry, and verifies a real model/tool round trip. The local CRM desk is on port 8001; scenario groups use short commands such as `make scenarios kickoff`. `make pull` prepares images ahead of time. A prepared Python host path runs the same agent and tools when Docker is unavailable; it still needs a reachable CRM and real model.
 - **Participant model access:** a shared hosted CLIProxyAPI Codex service on Boxd, with one workshop-only proxy key per pair. Participants receive preconfigured private `.env` files; provider OAuth stays on the server. Never commit credentials or include them in snapshots. No individual provider login is required for the session. Participants can configure their own OpenAI-compatible provider afterward.
 - **No modelless fallback:** if model access fails, join a working pair. Record and resolve proxy availability, quota, and setup issues before the session.
@@ -54,7 +54,7 @@ If time slips, pair up around a working environment and cut the batch and stale-
 
 ## Evidence and remaining checks
 
-Consult TESTING.md for current evidence. The old replay tests are superseded and do not establish the new architecture's behavior. Separate deterministic server tests, real-model scenario observations, browser verification, and setup/load checks. A single successful scenario is not a reliability estimate. Preserve failed baseline traces and check matched before/after runs without weakening expectations.
+The old replay tests are superseded and do not establish the new architecture's behavior. Separate deterministic server tests, real-model scenario observations, browser verification, and setup/load checks. A single successful scenario is not a reliability estimate. Preserve failed baseline traces and check matched before/after runs without weakening expectations.
 
 The organizer committed to send the 22 attendees the corrected time, room and laptop reminder. Treat dispatch as unverified until there is evidence. For the facilitator: arrive at KIT, Mauritskade 63, by **13:15 CET**; pick up the speaker badge at Marble Hall registration and go to Raadzaal for tech setup. Slides are optional. Keep private logistics and participant correspondence out of public repository updates.
 

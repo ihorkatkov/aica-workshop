@@ -73,7 +73,7 @@ The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contai
 
 The CRM is a **local human console on a trusted laptop**. Its browser session is separate from the agent token, and mutations require same-origin requests with a CSRF token. It is not a production identity system. Do not expose the local services publicly.
 
-`make test` uses an isolated test policy to verify the infrastructure; `make check-policy` and scenarios test your actual changes. See [TESTING.md](TESTING.md) for evidence and limitations, and [infra/README.md](infra/README.md) for the hosted model service.
+`make test` uses an isolated test policy to verify the infrastructure; `make check-policy` and scenarios test your actual changes. See [infra/README.md](infra/README.md) for the hosted model service.
 
 ## Prepared host path
 
