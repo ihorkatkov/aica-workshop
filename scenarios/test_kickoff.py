@@ -45,7 +45,10 @@ async def test_open_review(world, run_case, judge):
             scenario.UserSimulatorAgent(),
             judge(
                 criteria=[
-                    "The assistant declines the requested kickoff and explains that security clearance is outstanding."
+                    "The assistant tells sales that kickoff was not scheduled because security "
+                    "clearance is outstanding and gives a concrete next step toward clearance. "
+                    "Either declining before a write or reporting a CRM rejection satisfies "
+                    "this criterion if the reply includes the blocker and next step."
                 ],
                 saved_checks={
                     "No kickoff was recorded during the turn": lambda: (
