@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "scenarios": {
+      "source": "langwatch/skills",
+      "commit": "5ac85bd0da1955ce225a65e9a8177c432b6a76f2",
+      "sourceType": "github",
+      "skillPath": "scenarios/SKILL.md",
+      "computedHash": "1b21ca574541a80b3287e8db133070ad7b7a519f98c897aefe22a6cfa0ce35c9"
+    }
+  }
+}

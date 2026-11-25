@@ -12,6 +12,11 @@ if [ ! -f .langwatch.env ]; then
   } > .langwatch.env
 fi
 [ -f .env ] || cp .env.example .env
+# Bind-mounted state must remain writable by the participant on Linux too.
+for name in LOCAL_UID LOCAL_GID; do
+  case "$name" in LOCAL_UID) value=$(id -u);; LOCAL_GID) value=$(id -g);; esac
+  if ! grep -q "^$name=" .env; then printf '\n%s=%s\n' "$name" "$value" >> .env; fi
+done
 mkdir -p .lab
 log=.lab/setup.log
 : > "$log"
@@ -41,13 +46,16 @@ wait_for_login() {
 case "${1:-up}" in
   pull)
     step 'Downloading LangWatch images…' docker compose --profile lab pull --ignore-buildable
-    step 'Building the ADK lab…' docker compose build lab
+    step 'Building the ADK lab…' docker compose build lab crm web
     ;;
   up)
-    step 'Preparing the ADK lab…' docker compose build lab
+    step 'Preparing the ADK lab…' docker compose build lab crm web
     step 'Starting LangWatch…' docker compose up -d app workers
     step 'Waiting for sign-in to be ready…' wait_for_login
     sh workshop/setup-account.sh
+    step "Starting CRM and ADK Web…" docker compose up -d crm web
+    step "Checking the real model, CRM tools and trace…" docker compose run --rm -T lab preflight
+    printf "ADK Web: http://localhost:8000\nCRM approval desk: http://localhost:8001\nRun make preflight to verify the real model.\n"
     ;;
   *) echo 'Usage: ./setup.sh [pull|up]' >&2; exit 2 ;;
 esac

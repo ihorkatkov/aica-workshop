@@ -18,9 +18,9 @@ awk -v key="$key" '/^LANGWATCH_API_KEY=/{if (!seen++) print "LANGWATCH_API_KEY="
 mv "$tmp" .env
 echo 'Sending the first trace and checking it in LangWatch…'
 for attempt in 1 2 3 4; do
-  if LIVE_MODEL=0 ./verify-stack.sh >> .lab/setup.log 2>&1; then break; fi
+  if ./verify-stack.sh >> .lab/setup.log 2>&1; then break; fi
   if [ "$attempt" = 4 ]; then tail -25 .lab/setup.log >&2; exit 1; fi
   echo 'Trace storage is still starting. Retrying…'
   sleep 5
 done
-printf '\nWorkshop ready!\n\n  Dashboard  %s/aica-lab/traces\n  Email       %s\n  Password    %s\n\n  Start the exercise with: make unsafe\n' "$url" "$email" "$password"
+printf '\nLangWatch ready!\n\n  Dashboard  %s/aica-lab/traces\n  Email       %s\n  Password    %s\n\n  Next: open ADK Web at http://localhost:8000\n' "$url" "$email" "$password"

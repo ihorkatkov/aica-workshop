@@ -1,0 +1,91 @@
+"""Local human console. Browser credentials are separate from agent API tokens."""
+
+import hashlib
+import hmac
+from pathlib import Path
+import secrets
+import time
+from fastapi import Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from .server_types import ReviewChange
+
+
+def install_ui(app, store):
+    secret = secrets.token_bytes(32)
+    workspace = "workshop"
+
+    def sign(value):
+        return hmac.new(secret, value.encode(), hashlib.sha256).hexdigest()
+
+    def browser(request: Request):
+        token = request.cookies.get("aica_human", "")
+        try:
+            value, signature = token.rsplit(".", 1)
+            timestamp = int(value.split(":", 1)[0])
+            valid = (
+                hmac.compare_digest(signature, sign(value))
+                and 0 <= time.time() - timestamp < 28800
+            )
+        except (ValueError, TypeError):
+            valid = False
+        if not valid:
+            raise HTTPException(
+                401, "Open the CRM page again to renew your local session."
+            )
+        if request.method != "GET":
+            if request.headers.get("origin") != str(request.base_url).rstrip(
+                "/"
+            ) or not hmac.compare_digest(
+                request.headers.get("x-csrf-token", ""), token
+            ):
+                raise HTTPException(403, "Use the CRM page to perform this action.")
+
+    @app.get("/", response_class=HTMLResponse)
+    def console(request: Request):
+        if request.headers.get("sec-fetch-site") == "cross-site":
+            raise HTTPException(403, "Open the local CRM directly.")
+        value = f"{int(time.time())}:{secrets.token_urlsafe(24)}"
+        token = value + "." + sign(value)
+        html = (
+            (Path(__file__).parent / "console.html")
+            .read_text()
+            .replace("__CSRF__", token)
+        )
+        response = HTMLResponse(
+            html,
+            headers={
+                "Cache-Control": "no-store",
+                "X-Frame-Options": "DENY",
+                "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'",
+            },
+        )
+        response.set_cookie(
+            "aica_human",
+            token,
+            httponly=True,
+            samesite="strict",
+            max_age=28800,
+            path="/ui",
+            secure=request.url.scheme == "https",
+        )
+        return response
+
+    @app.get("/ui/state", dependencies=[Depends(browser)])
+    def state(db=Depends(store)):
+        return db.state(workspace)
+
+    @app.post("/ui/reset", dependencies=[Depends(browser)])
+    def reset(db=Depends(store)):
+        return db.reset(workspace)
+
+    @app.post("/ui/proposals/{pid}/approve", dependencies=[Depends(browser)])
+    def approve(pid: str, db=Depends(store)):
+        return db.approve(workspace, pid)
+
+    @app.post("/ui/proposals/{pid}/promote", dependencies=[Depends(browser)])
+    def promote(pid: str, db=Depends(store)):
+        return db.promote(workspace, pid)
+
+    @app.post("/ui/deals/{deal_id}/review", dependencies=[Depends(browser)])
+    def review(deal_id: str, body: ReviewChange, db=Depends(store)):
+        return db.set_review(workspace, deal_id, body.status)

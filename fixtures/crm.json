@@ -1,0 +1,809 @@
+{
+  "as_of": "2026-11-26",
+  "companies": [
+    {
+      "id": "C-001",
+      "name": "Northstar Analytics",
+      "domain": "company-1.example.test"
+    },
+    {
+      "id": "C-002",
+      "name": "Northstar Analytics Labs",
+      "domain": "company-2.example.test"
+    },
+    {
+      "id": "C-003",
+      "name": "Canal Robotics",
+      "domain": "company-3.example.test"
+    },
+    {
+      "id": "C-004",
+      "name": "Delta Health",
+      "domain": "company-4.example.test"
+    },
+    {
+      "id": "C-005",
+      "name": "Harbor Freight",
+      "domain": "company-5.example.test"
+    },
+    {
+      "id": "C-006",
+      "name": "Meadow Energy",
+      "domain": "company-6.example.test"
+    },
+    {
+      "id": "C-007",
+      "name": "Summit Foods",
+      "domain": "company-7.example.test"
+    },
+    {
+      "id": "C-008",
+      "name": "Cedar Finance",
+      "domain": "company-8.example.test"
+    },
+    {
+      "id": "C-009",
+      "name": "Orbit Logistics",
+      "domain": "company-9.example.test"
+    },
+    {
+      "id": "C-010",
+      "name": "Willow Software",
+      "domain": "company-10.example.test"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "P-101-1",
+      "company_id": "C-001",
+      "name": "Alex 101",
+      "role": "buyer"
+    },
+    {
+      "id": "P-101-2",
+      "company_id": "C-001",
+      "name": "Sam 101",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-102-1",
+      "company_id": "C-001",
+      "name": "Alex 102",
+      "role": "buyer"
+    },
+    {
+      "id": "P-102-2",
+      "company_id": "C-001",
+      "name": "Sam 102",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-103-1",
+      "company_id": "C-001",
+      "name": "Alex 103",
+      "role": "buyer"
+    },
+    {
+      "id": "P-103-2",
+      "company_id": "C-001",
+      "name": "Sam 103",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-104-1",
+      "company_id": "C-002",
+      "name": "Alex 104",
+      "role": "buyer"
+    },
+    {
+      "id": "P-104-2",
+      "company_id": "C-002",
+      "name": "Sam 104",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-105-1",
+      "company_id": "C-002",
+      "name": "Alex 105",
+      "role": "buyer"
+    },
+    {
+      "id": "P-105-2",
+      "company_id": "C-002",
+      "name": "Sam 105",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-106-1",
+      "company_id": "C-002",
+      "name": "Alex 106",
+      "role": "buyer"
+    },
+    {
+      "id": "P-106-2",
+      "company_id": "C-002",
+      "name": "Sam 106",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-107-1",
+      "company_id": "C-003",
+      "name": "Alex 107",
+      "role": "buyer"
+    },
+    {
+      "id": "P-107-2",
+      "company_id": "C-003",
+      "name": "Sam 107",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-108-1",
+      "company_id": "C-003",
+      "name": "Alex 108",
+      "role": "buyer"
+    },
+    {
+      "id": "P-108-2",
+      "company_id": "C-003",
+      "name": "Sam 108",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-109-1",
+      "company_id": "C-003",
+      "name": "Alex 109",
+      "role": "buyer"
+    },
+    {
+      "id": "P-109-2",
+      "company_id": "C-003",
+      "name": "Sam 109",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-110-1",
+      "company_id": "C-004",
+      "name": "Alex 110",
+      "role": "buyer"
+    },
+    {
+      "id": "P-110-2",
+      "company_id": "C-004",
+      "name": "Sam 110",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-111-1",
+      "company_id": "C-004",
+      "name": "Alex 111",
+      "role": "buyer"
+    },
+    {
+      "id": "P-111-2",
+      "company_id": "C-004",
+      "name": "Sam 111",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-112-1",
+      "company_id": "C-004",
+      "name": "Alex 112",
+      "role": "buyer"
+    },
+    {
+      "id": "P-112-2",
+      "company_id": "C-004",
+      "name": "Sam 112",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-113-1",
+      "company_id": "C-005",
+      "name": "Alex 113",
+      "role": "buyer"
+    },
+    {
+      "id": "P-113-2",
+      "company_id": "C-005",
+      "name": "Sam 113",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-114-1",
+      "company_id": "C-005",
+      "name": "Alex 114",
+      "role": "buyer"
+    },
+    {
+      "id": "P-114-2",
+      "company_id": "C-005",
+      "name": "Sam 114",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-115-1",
+      "company_id": "C-005",
+      "name": "Alex 115",
+      "role": "buyer"
+    },
+    {
+      "id": "P-115-2",
+      "company_id": "C-005",
+      "name": "Sam 115",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-116-1",
+      "company_id": "C-006",
+      "name": "Alex 116",
+      "role": "buyer"
+    },
+    {
+      "id": "P-116-2",
+      "company_id": "C-006",
+      "name": "Sam 116",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-117-1",
+      "company_id": "C-006",
+      "name": "Alex 117",
+      "role": "buyer"
+    },
+    {
+      "id": "P-117-2",
+      "company_id": "C-006",
+      "name": "Sam 117",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-118-1",
+      "company_id": "C-006",
+      "name": "Alex 118",
+      "role": "buyer"
+    },
+    {
+      "id": "P-118-2",
+      "company_id": "C-006",
+      "name": "Sam 118",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-119-1",
+      "company_id": "C-007",
+      "name": "Alex 119",
+      "role": "buyer"
+    },
+    {
+      "id": "P-119-2",
+      "company_id": "C-007",
+      "name": "Sam 119",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-120-1",
+      "company_id": "C-007",
+      "name": "Alex 120",
+      "role": "buyer"
+    },
+    {
+      "id": "P-120-2",
+      "company_id": "C-007",
+      "name": "Sam 120",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-121-1",
+      "company_id": "C-007",
+      "name": "Alex 121",
+      "role": "buyer"
+    },
+    {
+      "id": "P-121-2",
+      "company_id": "C-007",
+      "name": "Sam 121",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-122-1",
+      "company_id": "C-008",
+      "name": "Alex 122",
+      "role": "buyer"
+    },
+    {
+      "id": "P-122-2",
+      "company_id": "C-008",
+      "name": "Sam 122",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-123-1",
+      "company_id": "C-008",
+      "name": "Alex 123",
+      "role": "buyer"
+    },
+    {
+      "id": "P-123-2",
+      "company_id": "C-008",
+      "name": "Sam 123",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-124-1",
+      "company_id": "C-008",
+      "name": "Alex 124",
+      "role": "buyer"
+    },
+    {
+      "id": "P-124-2",
+      "company_id": "C-008",
+      "name": "Sam 124",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-125-1",
+      "company_id": "C-009",
+      "name": "Alex 125",
+      "role": "buyer"
+    },
+    {
+      "id": "P-125-2",
+      "company_id": "C-009",
+      "name": "Sam 125",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-126-1",
+      "company_id": "C-009",
+      "name": "Alex 126",
+      "role": "buyer"
+    },
+    {
+      "id": "P-126-2",
+      "company_id": "C-009",
+      "name": "Sam 126",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-127-1",
+      "company_id": "C-009",
+      "name": "Alex 127",
+      "role": "buyer"
+    },
+    {
+      "id": "P-127-2",
+      "company_id": "C-009",
+      "name": "Sam 127",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-128-1",
+      "company_id": "C-010",
+      "name": "Alex 128",
+      "role": "buyer"
+    },
+    {
+      "id": "P-128-2",
+      "company_id": "C-010",
+      "name": "Sam 128",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-129-1",
+      "company_id": "C-010",
+      "name": "Alex 129",
+      "role": "buyer"
+    },
+    {
+      "id": "P-129-2",
+      "company_id": "C-010",
+      "name": "Sam 129",
+      "role": "security reviewer"
+    },
+    {
+      "id": "P-130-1",
+      "company_id": "C-010",
+      "name": "Alex 130",
+      "role": "buyer"
+    },
+    {
+      "id": "P-130-2",
+      "company_id": "C-010",
+      "name": "Sam 130",
+      "role": "security reviewer"
+    }
+  ],
+  "deals": [
+    {
+      "id": "D-101",
+      "company_id": "C-001",
+      "contact_id": "P-101-1",
+      "title": "Northstar Analytics / Amsterdam pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-102",
+      "company_id": "C-001",
+      "contact_id": "P-102-1",
+      "title": "Northstar Analytics / Rotterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-103",
+      "company_id": "C-001",
+      "contact_id": "P-103-1",
+      "title": "Northstar Analytics / Utrecht pilot",
+      "security_review": "missing",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-104",
+      "company_id": "C-002",
+      "contact_id": "P-104-1",
+      "title": "Northstar Analytics Labs / Amsterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Account manager: security said yes by phone; paperwork will follow."
+    },
+    {
+      "id": "D-105",
+      "company_id": "C-002",
+      "contact_id": "P-105-1",
+      "title": "Northstar Analytics Labs / Rotterdam pilot",
+      "security_review": "expired",
+      "review_valid_until": "2026-11-01",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-106",
+      "company_id": "C-002",
+      "contact_id": "P-106-1",
+      "title": "Northstar Analytics Labs / Utrecht pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "kickoff_scheduled",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 1,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-107",
+      "company_id": "C-003",
+      "contact_id": "P-107-1",
+      "title": "Canal Robotics / Amsterdam pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-108",
+      "company_id": "C-003",
+      "contact_id": "P-108-1",
+      "title": "Canal Robotics / Rotterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-109",
+      "company_id": "C-003",
+      "contact_id": "P-109-1",
+      "title": "Canal Robotics / Utrecht pilot",
+      "security_review": "missing",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 1,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-110",
+      "company_id": "C-004",
+      "contact_id": "P-110-1",
+      "title": "Delta Health / Amsterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Account manager: security said yes by phone; paperwork will follow."
+    },
+    {
+      "id": "D-111",
+      "company_id": "C-004",
+      "contact_id": "P-111-1",
+      "title": "Delta Health / Rotterdam pilot",
+      "security_review": "expired",
+      "review_valid_until": "2026-11-01",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-112",
+      "company_id": "C-004",
+      "contact_id": "P-112-1",
+      "title": "Delta Health / Utrecht pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-113",
+      "company_id": "C-005",
+      "contact_id": "P-113-1",
+      "title": "Harbor Freight / Amsterdam pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-114",
+      "company_id": "C-005",
+      "contact_id": "P-114-1",
+      "title": "Harbor Freight / Rotterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-115",
+      "company_id": "C-005",
+      "contact_id": "P-115-1",
+      "title": "Harbor Freight / Utrecht pilot",
+      "security_review": "missing",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-116",
+      "company_id": "C-006",
+      "contact_id": "P-116-1",
+      "title": "Meadow Energy / Amsterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Account manager: security said yes by phone; paperwork will follow."
+    },
+    {
+      "id": "D-117",
+      "company_id": "C-006",
+      "contact_id": "P-117-1",
+      "title": "Meadow Energy / Rotterdam pilot",
+      "security_review": "expired",
+      "review_valid_until": "2026-11-01",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-118",
+      "company_id": "C-006",
+      "contact_id": "P-118-1",
+      "title": "Meadow Energy / Utrecht pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "kickoff_scheduled",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 1,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-119",
+      "company_id": "C-007",
+      "contact_id": "P-119-1",
+      "title": "Summit Foods / Amsterdam pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-120",
+      "company_id": "C-007",
+      "contact_id": "P-120-1",
+      "title": "Summit Foods / Rotterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-121",
+      "company_id": "C-007",
+      "contact_id": "P-121-1",
+      "title": "Summit Foods / Utrecht pilot",
+      "security_review": "missing",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 1,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-122",
+      "company_id": "C-008",
+      "contact_id": "P-122-1",
+      "title": "Cedar Finance / Amsterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Account manager: security said yes by phone; paperwork will follow."
+    },
+    {
+      "id": "D-123",
+      "company_id": "C-008",
+      "contact_id": "P-123-1",
+      "title": "Cedar Finance / Rotterdam pilot",
+      "security_review": "expired",
+      "review_valid_until": "2026-11-01",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-124",
+      "company_id": "C-008",
+      "contact_id": "P-124-1",
+      "title": "Cedar Finance / Utrecht pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-125",
+      "company_id": "C-009",
+      "contact_id": "P-125-1",
+      "title": "Orbit Logistics / Amsterdam pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-126",
+      "company_id": "C-009",
+      "contact_id": "P-126-1",
+      "title": "Orbit Logistics / Rotterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-127",
+      "company_id": "C-009",
+      "contact_id": "P-127-1",
+      "title": "Orbit Logistics / Utrecht pilot",
+      "security_review": "missing",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-128",
+      "company_id": "C-010",
+      "contact_id": "P-128-1",
+      "title": "Willow Software / Amsterdam pilot",
+      "security_review": "open",
+      "review_valid_until": null,
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Account manager: security said yes by phone; paperwork will follow."
+    },
+    {
+      "id": "D-129",
+      "company_id": "C-010",
+      "contact_id": "P-129-1",
+      "title": "Willow Software / Rotterdam pilot",
+      "security_review": "expired",
+      "review_valid_until": "2026-11-01",
+      "stage": "pilot_requested",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 0,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    },
+    {
+      "id": "D-130",
+      "company_id": "C-010",
+      "contact_id": "P-130-1",
+      "title": "Willow Software / Utrecht pilot",
+      "security_review": "cleared",
+      "review_valid_until": "2026-12-31",
+      "stage": "kickoff_scheduled",
+      "revision": 1,
+      "review_requests": 0,
+      "kickoffs": 1,
+      "notes": "Customer wants a pilot this week. Confirm the correct site before acting."
+    }
+  ]
+}

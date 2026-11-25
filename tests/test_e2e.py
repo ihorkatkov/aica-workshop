@@ -1,201 +1,215 @@
+"""Deterministic HTTP/CRM boundary checks. These are not model evidence."""
+
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
-import os
 from pathlib import Path
-import subprocess
-import sys
-import tempfile
-import threading
-import unittest
+import pytest
+from fastapi.testclient import TestClient
+from crm.server import create_app
+from crm.store import Store, FIXTURE
+from crm import policy
+from facilitator import reference_policy as solution
 
-ROOT = Path(__file__).resolve().parents[1]
 
-@contextmanager
-def wire(reply):
-    requests = []
-    class Handler(BaseHTTPRequestHandler):
-        def do_POST(self):
-            data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            requests.append((self.path, dict(self.headers), data))
-            status, body = reply(data)
-            content = json.dumps(body).encode()
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(content)))
-            self.end_headers()
-            self.wfile.write(content)
-        def do_GET(self):
-            requests.append((self.path, dict(self.headers), None))
-            body = json.dumps({"spans": [{"name": "get_deal"}]}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-        def log_message(self, *args):
-            pass
-    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
-        worker = threading.Thread(target=server.serve_forever, daemon=True)
-        worker.start()
-        try:
-            yield "http://127.0.0.1:" + str(server.server_port), requests
-        finally:
-            server.shutdown()
-            worker.join()
+@pytest.fixture
+def api(tmp_path, monkeypatch):
+    monkeypatch.setattr(policy, "ALLOW_DIRECT_WRITES", False)
+    monkeypatch.setattr(policy, "validate", solution.validate)
+    path = tmp_path / "crm.sqlite3"
+    with TestClient(create_app(path)) as client:
+        client.headers["Authorization"] = "Bearer workshop-human"
+        yield client, path
 
-class Lab(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.state = str(Path(self.tmp.name, "db.sqlite"))
-        self.traces = str(Path(self.tmp.name, "traces"))
-        self.env = dict(os.environ, PYTHONPATH=str(ROOT), NO_PROXY="127.0.0.1",
-                        no_proxy="127.0.0.1")
-        for var in ("OPENAI_API_KEY", "OPENAI_MODEL", "OPENAI_BASE_URL",
-                    "LANGWATCH_API_KEY", "LANGWATCH_ENDPOINT"):
-            self.env.pop(var, None)
 
-    def cli(self, *args, env=None, success=True):
-        result = subprocess.run([sys.executable, "-m", "lab", "--state", self.state,
-                     "--traces", self.traces, *args], cwd=self.tmp.name,
-                     env=dict(self.env, **(env or {})), text=True, capture_output=True, check=False)
-        if not success:
-            self.assertNotEqual(result.returncode, 0)
-            return result.stderr
-        self.assertEqual(result.returncode, 0, result.stderr)
-        return json.loads(result.stdout)
+def test_fixtures_have_relations_and_real_variations():
+    data = json.loads(FIXTURE.read_text())
+    assert len(data["deals"]) == 30 and len(data["contacts"]) == 60
+    companies = {c["id"] for c in data["companies"]}
+    contacts = {c["id"]: c for c in data["contacts"]}
+    for d in data["deals"]:
+        assert d["company_id"] in companies
+        assert contacts[d["contact_id"]]["company_id"] == d["company_id"]
+    assert {d["security_review"] for d in data["deals"]} == {
+        "open",
+        "cleared",
+        "missing",
+        "expired",
+    }
 
-    def test_full_workshop(self):
-        unsafe = self.cli("unsafe")
-        different = unsafe["result"]["actual_record"]
-        self.assertEqual(different["security_review"], "open")
-        self.assertEqual(different["stage"], "kickoff_scheduled")
-        self.assertIn("write_deal", [s["name"] for s in self.cli("trace", unsafe["trace_id"])["spans"]])
-        baseline = self.cli("reset")
-        safe = self.cli("--solution", "safe")
-        self.assertEqual(self.cli("state"), baseline)
-        result = safe["result"]["outcome"]
-        self.assertEqual(result["action"], "request_review_update")
-        spans = self.cli("trace", safe["trace_id"])["spans"]
-        decisions = [json.loads(s["gen_ai.tool.call.result"]) for s in spans if s["name"] == "propose_action"]
-        self.assertEqual([d["status"] for d in decisions], ["rejected", "pending"])
-        self.assertEqual(decisions[0]["code"], "REVIEW_NOT_CLEARED")
-        pid = result["proposal_id"]
-        self.assertEqual(self.cli("--solution", "promote", pid)["result"]["code"], "NOT_APPROVED")
-        self.assertEqual(self.cli("state"), baseline)
-        self.assertEqual(self.cli("approve", pid)["result"]["status"], "approved")
-        self.assertEqual(self.cli("state"), baseline)
-        self.assertEqual(self.cli("--solution", "promote", pid)["result"]["status"], "applied")
-        self.assertEqual(self.cli("--solution", "promote", pid)["result"]["code"], "NOT_APPROVED")
-        self.assertEqual(self.cli("state")["review_requests"], 1)
 
-    def test_stale_retry_requires_new_proposal_and_approval(self):
-        self.cli("set-review", "cleared")
-        pid = self.cli("--solution", "safe")["result"]["outcome"]["proposal_id"]
-        self.cli("approve", pid)
-        self.cli("set-review", "open")
-        before = self.cli("state")
-        self.assertEqual(self.cli("--solution", "promote", pid)["result"]["code"], "STALE_STATE")
-        self.assertEqual(self.cli("state"), before)
-        fresh = self.cli("--solution", "safe")["result"]["outcome"]["proposal_id"]
-        self.assertNotEqual(pid, fresh)
-        self.assertEqual(self.cli("--solution", "promote", fresh)["result"]["code"], "NOT_APPROVED")
-        self.cli("approve", fresh)
-        self.assertEqual(self.cli("--solution", "promote", fresh)["result"]["status"], "applied")
-        self.assertEqual(self.cli("state")["review_requests"], 1)
+def test_unsafe_baseline_really_writes_and_duplicates(api, monkeypatch):
+    monkeypatch.setattr(policy, "ALLOW_DIRECT_WRITES", True)
+    client, _ = api
+    url = "/workspaces/workshop/deals/D-104/write"
+    for _ in range(2):
+        result = client.post(url, json={"action": "schedule_kickoff"}).json()
+    assert result["record"]["security_review"] == "open"
+    assert result["record"]["kickoffs"] == 2
 
-    def test_promotion_revalidates_even_when_revision_is_unchanged(self):
-        pid = self.cli("safe")["result"]["outcome"]["proposal_id"] # missing learner rule
-        self.cli("approve", pid)
-        before = self.cli("state")
-        self.assertEqual(self.cli("--solution", "promote", pid)["result"]["code"], "REVIEW_NOT_CLEARED")
-        self.assertEqual(self.cli("state"), before)
 
-    def test_concurrent_promotions_only_apply_once(self):
-        pid = self.cli("--solution", "safe")["result"]["outcome"]["proposal_id"]
-        self.cli("approve", pid)
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            statuses = list(pool.map(lambda _: self.cli("--solution", "promote", pid)["result"]["status"], range(2)))
-        self.assertCountEqual(statuses, ["applied", "rejected"])
-        self.assertEqual(self.cli("state")["review_requests"], 1)
+def test_http_rejection_revision_approval_and_exactly_once(api):
+    c, _ = api
+    base = "/workspaces/workshop"
+    before = c.get(base + "/state").json()["deals"]
+    rejection = c.post(
+        base + "/deals/D-104/propose", json={"action": "schedule_kickoff"}
+    ).json()
+    assert rejection["code"] == "REVIEW_NOT_CLEARED"
+    assert rejection["allowed"] == ["request_review_update"]
+    pid = c.post(
+        base + "/deals/D-104/propose", json={"action": "request_review_update"}
+    ).json()["id"]
+    assert c.post(base + f"/proposals/{pid}/promote").json()["code"] == "NOT_APPROVED"
+    assert c.post(base + f"/proposals/{pid}/approve").json()["status"] == "approved"
+    assert c.get(base + "/state").json()["deals"] == before
+    assert c.post(base + f"/proposals/{pid}/promote").json()["status"] == "applied"
+    assert (
+        c.post(base + f"/proposals/{pid}/promote").json()["status"] == "already_applied"
+    )
+    assert c.get(base + "/records/D-104").json()["review_requests"] == 1
 
-    def test_otlp_wire_and_partial_rejection(self):
-        with wire(lambda _: (200, {})) as (url, reqs):
-            env = {"LANGWATCH_ENDPOINT": url, "LANGWATCH_API_KEY": "test-project"}
-            out = self.cli("smoke-trace", "--require-langwatch", env=env)
-            self.assertEqual(out["langwatch_export"], "accepted")
-            path, headers, body = reqs[0]
-            self.assertEqual(path, "/api/otel/v1/traces")
-            self.assertEqual(headers["X-Auth-Token"], "test-project")
-            spans = [span for scope in body["resourceSpans"][0]["scopeSpans"]
-                     for span in scope["spans"]]
-            root = next(s for s in spans if "parentSpanId" not in s)
-            tool = next(s for s in spans if s["name"] == "get_deal")
-            agent = next(s for s in spans if s["name"] == "agent_run [pilot_coordinator]")
-            invocation = next(s for s in spans if s["name"] == "invocation [aica]")
-            self.assertEqual(tool["parentSpanId"], agent["spanId"])
-            self.assertEqual(agent["parentSpanId"], invocation["spanId"])
-            self.assertEqual(invocation["parentSpanId"], root["spanId"])
-            self.assertEqual(tool["traceId"], out["trace_id"])
-            self.assertNotIn("test-project", json.dumps(body))
-            check = self.cli("verify-trace", out["trace_id"], env=env)
-            self.assertEqual(check["tool_span"], "get_deal")
-            self.assertEqual(reqs[-1][0], "/api/trace/" + out["trace_id"])
-            self.assertEqual(reqs[-1][1]["X-Auth-Token"], "test-project")
-        with wire(lambda _: (200, {"partialSuccess": {"rejectedSpans": "1"}})) as (url, _):
-            self.assertIn("partial_failure", self.cli("smoke-trace", "--require-langwatch",
-                         env={**env, "LANGWATCH_ENDPOINT": url}, success=False))
 
-    def test_live_wire_passes_validation_feedback(self):
-        def reply(data):
-            if "tools" not in data:
-                msg = {"content": "OK"}
-            else:
-                action = ("request_review_update" if data["messages"][-1]["role"] == "tool"
-                          else "schedule_kickoff")
-                msg = {"role": "assistant", "tool_calls": [{"id": "call1", "type": "function",
-                       "function": {"name": "propose_action", "arguments": json.dumps({"action": action})}}]}
-            return 200, {"choices": [{"message": msg}]}
-        with wire(reply) as (url, reqs):
-            env = {"OPENAI_BASE_URL": url + "/v1", "OPENAI_API_KEY": "synthetic-key",
-                   "OPENAI_MODEL": "synthetic-model"}
-            self.assertTrue(self.cli("smoke-model", env=env)["live_response_received"])
-            before = self.cli("state")
-            out = self.cli("--solution", "safe", "--mode", "live", env=env)
-            self.assertEqual(out["result"]["outcome"]["action"], "request_review_update")
-            self.assertEqual(self.cli("state"), before)
-            self.assertTrue(all(p == "/v1/chat/completions" for p, _, _ in reqs))
-            self.assertEqual(reqs[-1][1]["Authorization"], "Bearer synthetic-key")
-            body = reqs[-1][2]
-            self.assertEqual([t["function"]["name"] for t in body["tools"]], ["propose_action"])
-            self.assertIn("REVIEW_NOT_CLEARED", body["messages"][-1]["content"])
-            call_id = body["messages"][-2]["tool_calls"][0]["id"]
-            self.assertTrue(call_id)
-            self.assertEqual(body["messages"][-1]["tool_call_id"], call_id)
+def test_server_denies_agent_approval_reset_and_guard_bypass(api):
+    c, _ = api
+    c.headers["Authorization"] = "Bearer workshop-agent"
+    base = "/workspaces/workshop"
+    assert c.post(base + "/reset", json={}).status_code == 403
+    assert c.post(base + "/proposals/anything/approve").status_code == 403
+    assert c.post(base + "/proposals/anything/promote").status_code == 403
+    assert (
+        c.post(base + "/deals/D-104/write", json={"action": "schedule_kickoff"}).json()[
+            "code"
+        ]
+        == "DIRECT_WRITE_DISABLED"
+    )
+    assert (
+        c.post(
+            base + "/deals/D-104/propose", json={"action": "delete_everything"}
+        ).status_code
+        == 422
+    )
 
-    def test_chatgpt_invalid_decision_leaves_state_unchanged(self):
-        binary = Path(self.tmp.name, "codex")
-        binary.write_text("#!/bin/sh\ncat >/dev/null\nprintf '%s' "
-                          """'{"action":"human_promote"}' >decision.json\n""")
-        binary.chmod(0o700)
-        before = self.cli("state")
-        error = self.cli("--solution", "safe", "--mode", "chatgpt", success=False,
-                         env={"PATH": self.tmp.name + os.pathsep + os.environ["PATH"]})
-        self.assertIn("Unexpected tool or action", error)
-        self.assertEqual(self.cli("state"), before)
 
-    def test_unsupported_tool_fails_closed(self):
-        def reply(_):
-            return 200, {"choices": [{"message": {"tool_calls": [{"function": {
-                "name": "human_promote", "arguments": '{"action":"schedule_kickoff"}'}}]}}]}
-        before = self.cli("state")
-        with wire(reply) as (url, _):
-            out = self.cli("--solution", "safe", "--mode", "live", success=False,
-                           env={"OPENAI_BASE_URL": url, "OPENAI_API_KEY": "fake", "OPENAI_MODEL": "fake"})
-            self.assertIn("Unexpected tool or action", out)
-        self.assertEqual(self.cli("state"), before)
+def test_stale_and_cross_workspace_approval(api):
+    c, _ = api
+    base = "/workspaces/workshop"
+    pid = c.post(
+        base + "/deals/D-101/propose", json={"action": "schedule_kickoff"}
+    ).json()["id"]
+    c.post(base + f"/proposals/{pid}/approve")
+    assert c.post(f"/workspaces/other/proposals/{pid}/promote").status_code == 404
+    c.post(base + "/deals/D-101/review", json={"status": "open"})
+    assert c.post(base + f"/proposals/{pid}/promote").json()["code"] == "STALE_STATE"
+    assert c.get(base + "/records/D-101").json()["stage"] == "pilot_requested"
 
-if __name__ == "__main__":
-    unittest.main()
+
+def test_concurrent_promotions_and_proposal_retries(api):
+    c, path = api
+    base = "/workspaces/workshop"
+    body = {"action": "request_review_update"}
+    pid = c.post(base + "/deals/D-104/propose", json=body).json()["id"]
+    assert c.post(base + "/deals/D-104/propose", json=body).json()["id"] == pid
+    c.post(base + f"/proposals/{pid}/approve")
+
+    def promote(_):
+        with Store(path) as db:
+            return db.promote("workshop", pid)["status"]
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert sorted(pool.map(promote, range(2))) == ["already_applied", "applied"]
+    assert c.get(base + "/records/D-104").json()["review_requests"] == 1
+
+
+def test_revalidates_current_policy_at_promotion(api, monkeypatch):
+    monkeypatch.setattr(policy, "validate", lambda record, action: None)
+    c, _ = api
+    base = "/workspaces/workshop"
+    pid = c.post(
+        base + "/deals/D-104/propose", json={"action": "schedule_kickoff"}
+    ).json()["id"]
+    c.post(base + f"/proposals/{pid}/approve")
+
+    monkeypatch.setattr(policy, "validate", solution.validate)
+    assert (
+        c.post(base + f"/proposals/{pid}/promote").json()["code"]
+        == "REVIEW_NOT_CLEARED"
+    )
+    assert c.get(base + "/records/D-104").json()["kickoffs"] == 0
+
+
+def test_noop_and_reset_isolation(api):
+    c, _ = api
+    base = "/workspaces/workshop"
+    assert (
+        c.post(
+            base + "/deals/D-106/propose", json={"action": "schedule_kickoff"}
+        ).json()["status"]
+        == "no_change"
+    )
+    assert c.get(base + "/state").json()["proposals"] == []
+    assert c.get(base + "/records/D-106").json()["kickoffs"] == 1
+    c.post("/workspaces/other/reset")
+    c.post("/workspaces/other/deals/D-104/review", json={"status": "cleared"})
+    c.post(base + "/reset")
+    assert (
+        c.get("/workspaces/other/records/D-104").json()["security_review"] == "cleared"
+    )
+
+
+def test_one_editable_adk_agent():
+    from lab.agent import build_agent
+
+    agent = build_agent()
+    assert agent.name == "workshop"
+    names = {t.__name__ for t in agent.tools}
+    assert {"search_deals", "get_record"} <= names
+    assert names - {"search_deals", "get_record"} in (
+        {"write_deal"},
+        {"propose_action"},
+    )
+    assert agent.model.__class__.__name__ == "LiteLlm"
+    assert {p.name for p in Path("agents").iterdir() if (p / "agent.py").exists()} == {
+        "workshop"
+    }
+
+
+def test_parallel_http_workspaces(api):
+    client, _ = api
+
+    def exercise(i):
+        workspace = f"parallel-{i}"
+        response = client.post(f"/workspaces/{workspace}/reset", json={})
+        assert response.status_code == 200
+        response = client.get(f"/workspaces/{workspace}/state")
+        assert response.status_code == 200
+        assert len(response.json()["deals"]) == 30
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(exercise, range(12)))
+
+
+def test_wrong_record_type_is_recoverable(api):
+    client, _ = api
+    response = client.post(
+        "/workspaces/workshop/deals/C-001/propose", json={"action": "schedule_kickoff"}
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Expected a deal ID"
+
+
+def test_upgrades_old_workspace_schema_without_losing_records(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "old.db"
+    with sqlite3.connect(path) as old:
+        old.execute(
+            "CREATE TABLE workspaces(id TEXT PRIMARY KEY, variant TEXT NOT NULL)"
+        )
+        old.execute("INSERT INTO workspaces VALUES('saved-evidence','reference')")
+    with Store(path) as db:
+        assert db.require_workspace("saved-evidence") == "saved-evidence"
+        db.reset("workshop")
+        assert len(db.deals("workshop")) == 30
+        assert [row[1] for row in db.db.execute("PRAGMA table_info(workspaces)")] == [
+            "id"
+        ]

@@ -1,90 +1,84 @@
+import argparse
 import asyncio
-from argparse import ArgumentParser
 import json
-import os
-from pathlib import Path
 import sys
+import httpx
+from . import config
+from .tools import request
 
-from . import policy, solution
-from .store import Store
-from .telemetry import Trace, check_readback
 
-def read_env(path):
-    if not Path(path).is_file():
-        return
-    for line in Path(path).read_text().splitlines():
-        key, eq, value = line.partition("=")
-        if eq and key.strip() and not key.lstrip().startswith("#"):
-            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+async def run_agent(args):
+    from .runtime import Conversation
+
+    conversation = Conversation(args.workspace or "workshop")
+    try:
+        return await conversation.turn(args.prompt)
+    finally:
+        await conversation.close()
+
 
 def main():
-    p = ArgumentParser(description="AICA agent lab. Synthetic records only.")
-    p.add_argument("--state", default=os.getenv("LAB_STATE", ".lab/state.sqlite3"))
-    p.add_argument("--traces", default=os.getenv("LAB_TRACES", ".lab/traces"))
-    p.add_argument("--solution", action="store_true", help="Use the reference validator.")
-    sub = p.add_subparsers(dest="command", required=True)
-    canary = sub.add_parser("smoke-trace")
-    canary.add_argument("--require-langwatch", action="store_true")
-    sub.add_parser("smoke-model").add_argument("--mode", choices=("live", "chatgpt"), default="live")
-    for name in ("state", "reset"):
-        sub.add_parser(name)
-    for name in ("unsafe", "safe"):
-        sub.add_parser(name).add_argument("--mode", choices=("live", "chatgpt", "replay"), default="replay")
-    for name in ("inspect", "approve", "promote"):
+    parser = argparse.ArgumentParser(
+        description="AICA real-LLM workshop; synthetic CRM only."
+    )
+    parser.add_argument("--workspace")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("reset")
+    sub.add_parser("state")
+    sub.add_parser("smoke-trace")
+    sub.add_parser("verify-trace").add_argument("trace_id")
+    sub.add_parser("run").add_argument("prompt")
+    sub.add_parser("preflight")
+    for name in ["inspect", "approve", "promote"]:
         sub.add_parser(name).add_argument("proposal_id")
-    sub.add_parser("set-review").add_argument("value", choices=("open", "cleared"))
-    check = sub.add_parser("verify-trace")
-    check.add_argument("id")
-    check.add_argument("tool", nargs="?", default="get_deal")
-    trace_p = sub.add_parser("trace")
-    trace_p.add_argument("id")
-    a = p.parse_args()
-    read_env(".env")
-    if a.command == "verify-trace":
-        return check_readback(a.id, a.tool)
-    if a.command == "trace":
-        if len(a.id) != 32 or any(c not in "0123456789abcdef" for c in a.id):
-            p.error("Provide a 32-character trace ID from a lab run.")
-        data = json.loads((Path(a.traces) / (a.id + ".json")).read_text())
-        spans = [span for resource in data["resourceSpans"] for scope in resource["scopeSpans"]
-                 for span in scope["spans"]]
-        return {"spans": [{"name": s["name"], **{item["key"]: item["value"]["stringValue"]
-                 for item in s["attributes"] if item["key"].startswith(("gen_ai.tool.", "langwatch.span.output"))}}
-                 for s in sorted(spans, key=lambda s: int(s["startTimeUnixNano"]))]}
-    if a.command == "smoke-model":
-        from .models import smoke_model
-        if not smoke_model(a.mode):
-            raise RuntimeError("Model response was empty.")
-        if a.mode == "chatgpt":
-            return {"provider": "codex-chatgpt", "live_response_received": True}
-        return {"model": os.environ["OPENAI_MODEL"], "live_response_received": True}
-    Path(a.state).parent.mkdir(parents=True, exist_ok=True)
-    store = Store(a.state, (solution if a.solution else policy).validate)
-    if a.command in ("state", "reset"):
-        return getattr(store, a.command)()
-    if a.command == "set-review":
-        return store.set_review(a.value)
-    if a.command == "inspect":
-        return store.proposal(a.proposal_id)
-    t = Trace(a.traces)
-    try:
-        with t.root(a.command) as root:
-            if a.command in ("approve", "promote"):
-                result = t.tool(getattr(store, a.command), "human_" + a.command,
-                                pid=a.proposal_id)
-            else:
-                from .agent import run
-                t.instrument_adk()
-                result = asyncio.run(run(store, a.command, getattr(a, "mode", "replay")))
-            root.set_attribute("langwatch.span.output", json.dumps({"type": "json", "value": result}))
-    except Exception:
-        t.finish()
-        raise
-    return {"result": result, **t.finish(getattr(a, "require_langwatch", False))}
+    review = sub.add_parser("set-review")
+    review.add_argument("deal_id")
+    review.add_argument("value", choices=["open", "cleared", "expired", "missing"])
+    args = parser.parse_args()
+    workspace = args.workspace or "workshop"
+    if args.command == "run":
+        return asyncio.run(run_agent(args))
+    if args.command in ["smoke-trace", "verify-trace"]:
+        from .telemetry import smoke, verify
+
+        return smoke() if args.command == "smoke-trace" else verify(args.trace_id)
+    if args.command == "preflight":
+        config.require_model()
+        args.prompt = "Read deal D-104 from the CRM and report its review status. Do not write or propose anything."
+        result = asyncio.run(run_agent(args))
+        if (
+            not result["tool_calls"]
+            or result["status"] != "complete"
+            or not result["agent_said"]
+        ):
+            raise RuntimeError("Model preflight did not complete a tool round trip")
+        from .telemetry import verify
+
+        return {**result, "langwatch": verify(result["trace_id"])}
+    if args.command == "reset":
+        return request(workspace, "POST", "reset", human=True)
+    if args.command == "state":
+        return request(workspace, "GET", "state", human=True)
+    if args.command == "set-review":
+        return request(
+            workspace,
+            "POST",
+            f"deals/{args.deal_id}/review",
+            human=True,
+            json={"status": args.value},
+        )
+    path = f"proposals/{args.proposal_id}"
+    return request(
+        workspace,
+        "GET" if args.command == "inspect" else "POST",
+        path if args.command == "inspect" else path + "/" + args.command,
+        human=True,
+    )
+
 
 if __name__ == "__main__":
     try:
         print(json.dumps(main(), indent=2))
-    except (RuntimeError, OSError, ValueError, KeyError, TypeError) as e:
-        print(f"Lab: {e}", file=sys.stderr)
+    except (RuntimeError, ValueError, httpx.HTTPError) as error:
+        print(f"Lab: {error}", file=sys.stderr)
         raise SystemExit(1)

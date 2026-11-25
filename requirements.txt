@@ -1,3 +1,12 @@
 google-adk==2.15.1
 openinference-instrumentation-google-adk==1.1.9
 langwatch==2.0.1
+litellm==1.111.0
+langwatch-scenario==1.7.1
+pytest==9.2.0
+pytest-asyncio==1.5.0
+pytest-timeout==2.4.0
+fastapi==0.165.0
+uvicorn==0.54.0
+httpx==0.28.1
+python-dotenv==1.2.4

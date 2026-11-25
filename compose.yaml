@@ -58,15 +58,50 @@ services:
       timeout: 3s
       retries: 30
       start_period: 15s
+  crm:
+    build: .
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /work
+    volumes: [".:/work"]
+    environment:
+      HOME: /tmp
+      PYTHONDONTWRITEBYTECODE: "1"
+      CRM_DB: /work/.lab/crm.sqlite3
+    ports: ["127.0.0.1:8001:8001"]
+    command: ["python", "-m", "uvicorn", "crm.server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  web:
+    build: .
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /work
+    volumes: [".:/work"]
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      CRM_URL: http://crm:8001
+      LANGWATCH_ENDPOINT: http://app:5560
+      PYTHONPATH: /work
+      HOME: /tmp
+      PYTHONDONTWRITEBYTECODE: "1"
+    depends_on:
+      crm: { condition: service_healthy }
+    command: ["adk", "web", "--host", "0.0.0.0", "--port", "8000", "--reload_agents", "agents"]
   lab:
     build: .
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     profiles: ["lab"]
     working_dir: /work
     volumes: [".:/work"]
     environment:
+      CRM_URL: http://crm:8001
       LANGWATCH_ENDPOINT: http://app:5560
+      HOME: /tmp
       PYTHONDONTWRITEBYTECODE: "1"
     entrypoint: ["python", "-m", "lab"]
+
 volumes:
   pgdata:
   redisdata:

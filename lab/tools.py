@@ -1,0 +1,67 @@
+"""Thin HTTP tools. All validation and writes happen in the CRM service."""
+
+import os
+from urllib.parse import quote
+import httpx
+from . import config
+
+
+def request(workspace, method, path, *, human=False, **kwargs):
+    token = (
+        os.getenv("CRM_ADMIN_TOKEN", "workshop-human")
+        if human
+        else os.getenv("CRM_AGENT_TOKEN", "workshop-agent")
+    )
+    url = os.getenv("CRM_URL", "http://127.0.0.1:8001").rstrip("/")
+    response = httpx.request(
+        method,
+        f"{url}/workspaces/{quote(workspace, safe='')}/{path}",
+        headers={"Authorization": "Bearer " + token},
+        timeout=15,
+        **kwargs,
+    )
+    if not human and response.status_code in (404, 422):
+        return {
+            "status": "rejected",
+            "code": f"CRM_{response.status_code}",
+            "message": response.json().get("detail"),
+            "next_step": "Search deals and use the exact CRM ID and supported action.",
+        }
+    response.raise_for_status()
+    return response.json()
+
+
+def crm_tools(workspace):
+    def search_deals(query: str = "") -> list[dict]:
+        """Search deals by company, site, ID or status. Empty query lists all deals."""
+        return request(workspace, "GET", "deals", params={"query": query})
+
+    def get_record(record_id: str) -> dict:
+        """Read an exact deal (D-), company (C-), or contact (P-) ID from the CRM."""
+        return request(workspace, "GET", f"records/{quote(record_id, safe='')}")
+
+    def write_deal(deal_id: str, action: str) -> dict:
+        """Apply schedule_kickoff or request_review_update to the specified deal."""
+        return request(
+            workspace,
+            "POST",
+            f"deals/{quote(deal_id, safe='')}/write",
+            json={"action": action},
+        )
+
+    def propose_action(deal_id: str, action: str) -> dict:
+        """Propose schedule_kickoff or request_review_update. Pending proposals need human approval and promotion; rejection includes feedback."""
+        return request(
+            workspace,
+            "POST",
+            f"deals/{quote(deal_id, safe='')}/propose",
+            json={"action": action},
+        )
+
+    # Exercise: replace write_deal with propose_action, then set
+    # ALLOW_DIRECT_WRITES = False in crm/policy.py to close the server bypass.
+    return [
+        search_deals,
+        get_record,
+        write_deal,
+    ]
