@@ -13,6 +13,11 @@ class DealAction(BaseModel):
     action: Literal["schedule_kickoff", "request_review_update"]
 
 
+class StageProposal(BaseModel):
+    to_stage: Literal["rollout", "rollout_planning"]
+    rationale: str
+
+
 class StageDecision(BaseModel):
     decision: Literal["approve", "reject"]
     to_stage: Literal["rollout", "rollout_planning"] | None = None

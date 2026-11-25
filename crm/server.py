@@ -5,8 +5,9 @@ import os
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
+from . import stages
 from .store import Store
-from .server_types import DealAction, ReviewChange
+from .server_types import DealAction, ReviewChange, StageProposal
 
 load_dotenv()
 
@@ -68,6 +69,10 @@ def create_app(path=None, *, mcp_workspace="workshop", call_log=None):
     )
     def record(workspace: str, record_id: str, db=Depends(store)):
         return db.get(workspace, record_id)
+
+    @app.post("/workspaces/{workspace}/deals/{deal_id}/proposals", dependencies=[Depends(reader)])
+    def propose(workspace: str, deal_id: str, body: StageProposal, db=Depends(store)):
+        return stages.propose(db, workspace, deal_id, body.to_stage, body.rationale)
 
     @app.get("/workspaces/{workspace}/state", dependencies=[Depends(human)])
     def state(workspace: str, db=Depends(store)):

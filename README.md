@@ -46,13 +46,13 @@ you ─ chat ─▶ agent (prompt + model) ─ tool call ─▶ CRM server ─�
               ADK, Claude Code or Codex            the only writer
 ```
 
-The agent decides what to ask for. The CRM server decides what actually changes. All three clients get the same three tools: ADK imports them directly, Claude Code and Codex reach them over MCP.
+The agent decides what to ask for. The CRM server decides what actually changes. All three clients get the same tool registry: ADK imports them directly, Claude Code and Codex reach them over MCP.
 
 | Part | Where | Start here |
 | --- | --- | --- |
 | Prompt | [agents/workshop/prompt.md](agents/workshop/prompt.md) | Edit the one paragraph, restart the agent chat, ask about D-104 again. [lab/agent.py](lab/agent.py) loads it for ADK, and scenario runs pass the same file to Claude Code and Codex. |
 | Tools | [lab/tools.py](lab/tools.py) | Try one: ask the chat "Use get_record to read D-104". Add one: write a function inside `crm_tools`, give it a docstring, add it to the returned list. [crm/mcp.py](crm/mcp.py) publishes that same list over MCP, wired up in [.mcp.json](.mcp.json) and [.codex/config.toml](.codex/config.toml). |
-| CRM server | [crm/](crm/) | Change `validate` in [crm/policy.py](crm/policy.py). It runs before every kickoff or review-request write: return `None` to allow, or a dict with a reason to reject. Routes are in [crm/server.py](crm/server.py), writes in [crm/store.py](crm/store.py), the stretch hooks in [crm/stages.py](crm/stages.py). |
+| CRM server | [crm/](crm/) | Change `validate` in [crm/policy.py](crm/policy.py). It runs before every kickoff or review-request write: return `None` to allow, or a dict with a reason to reject. Routes are in [crm/server.py](crm/server.py), writes in [crm/store.py](crm/store.py), proposal storage and owner decisions in [crm/stages.py](crm/stages.py). |
 
 Each tool is a thin HTTP call, so a new tool usually needs a new route in [crm/server.py](crm/server.py) too. The CRM reloads when you save. [scenarios/](scenarios/) holds the acceptance checks; leave them as they are.
 
@@ -78,7 +78,7 @@ Use the CRM’s **Details** and **Activity** views to demonstrate what changed. 
 
 Open **Stage proposals → Load stretch pilots…** and confirm to replace your local CRM data with the stretch fixture. D-101 through D-104 start in Pilot with cleared security reviews and the same notes as the batch scenario. **Reset CRM** restores the kickoff dataset.
 
-Build the MCP tool that saves a proposed Pilot → Rollout move, then implement the storage and owner-decision hooks in `crm/stages.py`. Refresh **Stage proposals** to review the rationale and customer evidence. Try approving D-101, editing D-102 to Rollout planning, and rejecting D-103. Open **View activity** to see what the owner authorized.
+Implement `propose_stage_change(deal_id, to_stage, rationale)` and register it in `crm_tools`. The starter accepts `POST /workspaces/{workspace}/deals/{deal_id}/proposals` with `to_stage` and `rationale`, saves a pending proposal, and returns its ID. Restart the agent session to discover the tool. Refresh **Stage proposals** to review the rationale and customer evidence. Try approving D-101, editing D-102 to Rollout planning, and rejecting D-103. Open **View activity** to see what the owner authorized.
 
 Run `make scenarios stage` for the four-pilot batch. With a pending proposal in your CRM, `make check-stage` verifies agent authorization and replay handling on disposable database copies. See [AGENTS.md](AGENTS.md) for the acceptance criteria.
 
@@ -103,7 +103,7 @@ make test          # deterministic infrastructure checks; no model calls
 make down          # stop services, preserve data
 ```
 
-The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns CRM records and business activity. The agent never opens the database. Approval storage and enforcement are participant work.
+The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns CRM records and business activity. The agent never opens the database. The starter stores stage proposals and applies the owner’s decisions.
 
 The CRM is a **local human console on a trusted laptop**. Its browser session is separate from the agent token, and mutations require same-origin requests with a CSRF token. It is not a production identity system. Do not expose the local services publicly.
 

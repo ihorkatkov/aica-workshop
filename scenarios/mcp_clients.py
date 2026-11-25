@@ -93,6 +93,8 @@ class NativeClient(scenario.AgentAdapter):
                 'mcp_servers.crm.tools.search_deals.approval_mode="approve"',
                 "-c",
                 'mcp_servers.crm.tools.write_deal.approval_mode="approve"',
+                "-c",
+                'mcp_servers.crm.tools.propose_stage_change.approval_mode="approve"',
                 *(["resume", self.session_id] if self.session_id else []),
                 "-o",
                 str(reply),

@@ -75,7 +75,6 @@ class Store:
                 "SELECT 1 FROM sqlite_master WHERE name='proposals'"
             ).fetchone():
                 self.db.execute("DELETE FROM proposals WHERE workspace=?", (workspace,))
-            stages.clear(self, workspace)
             fixture = json.loads(FIXTURE.read_text())
             for kind in ("companies", "contacts", "deals"):
                 for record in fixture[kind]:

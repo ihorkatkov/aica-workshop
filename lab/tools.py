@@ -37,7 +37,7 @@ def crm_tools(workspace):
         return request(workspace, "GET", "deals", params={"query": query})
 
     def get_record(record_id: str) -> dict:
-        """Read an exact deal (D-), company (C-), or contact (P-) ID from the CRM."""
+        """Read a deal (D-), company (C-), contact (P-), or saved stage proposal (PR-) by ID."""
         return request(workspace, "GET", f"records/{quote(record_id, safe='')}")
 
     def write_deal(deal_id: str, action: str) -> dict:

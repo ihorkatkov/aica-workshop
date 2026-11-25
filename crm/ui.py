@@ -81,12 +81,7 @@ def install_ui(app, store):
 
     @app.post("/ui/proposals/{proposal_id}/decision", dependencies=[Depends(browser)])
     def decide(proposal_id: str, body: StageDecision, db=Depends(store)):
-        try:
-            return stages.decide(db, workspace, proposal_id, body)
-        except NotImplementedError:
-            raise HTTPException(
-                501, "Stage decisions have not been implemented in this CRM."
-            ) from None
+        return stages.decide(db, workspace, proposal_id, body)
 
     @app.post("/ui/deals/{deal_id}/write", dependencies=[Depends(browser)])
     def write(deal_id: str, body: DealAction, db=Depends(store)):
