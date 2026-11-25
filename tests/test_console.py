@@ -206,3 +206,70 @@ def test_review_request_reopens_review_for_browser_and_agent(tmp_path):
                 )
                 assert event["after"]["security_review"] == "open"
                 assert event["after"]["review_valid_until"] is None
+
+
+def test_stretch_reset_uses_shared_fixture_and_keeps_kickoff_default(tmp_path):
+    from crm.store import Store
+
+    path = tmp_path / "crm.db"
+    with TestClient(create_app(path)) as desk:
+        desk.get("/")
+        headers = {
+            "Origin": "http://testserver",
+            "X-CSRF-Token": desk.cookies["aica_human"],
+        }
+        assert desk.post("/ui/reset", json={"dataset": "stretch"}).status_code == 403
+        assert desk.post(
+            "/ui/reset", headers=headers, json={"dataset": "stretch"}
+        ).is_success
+        saved = desk.get("/ui/state").json()
+        pilots = [
+            d for d in saved["deals"] if d["id"] in {"D-101", "D-102", "D-103", "D-104"}
+        ]
+        assert len(pilots) == 4
+        assert all(
+            d["stage"] == "pilot"
+            and d["security_review"] == "cleared"
+            and d["kickoffs"] == 1
+            for d in pilots
+        )
+        assert "capacity" in next(d["notes"] for d in pilots if d["id"] == "D-102")
+        assert "another week" in next(d["notes"] for d in pilots if d["id"] == "D-104")
+        assert desk.post("/ui/reset", json={}, headers=headers).is_success
+        with Store(path) as store:
+            record = store.get("workshop", "D-104")
+            assert (
+                record["stage"] == "pilot_requested"
+                and record["security_review"] == "open"
+            )
+
+
+def test_owner_decision_is_browser_scoped_and_passes_exact_edit(tmp_path, monkeypatch):
+    from crm import stages
+
+    observed = []
+
+    def capture(store, workspace, ident, body):
+        observed.append((workspace, ident, body.decision, body.to_stage))
+        return {"status": "approved"}
+
+    monkeypatch.setattr(stages, "decide", capture)
+    with TestClient(create_app(tmp_path / "crm.db")) as desk:
+        url = "/ui/proposals/p-102/decision"
+        body = {"decision": "approve", "to_stage": "rollout_planning"}
+        assert (
+            desk.post(
+                url, json=body, headers={"Authorization": "Bearer workshop-agent"}
+            ).status_code
+            == 401
+        )
+        desk.get("/")
+        assert desk.post(url, json=body).status_code == 403
+        headers = {
+            "Origin": "http://testserver",
+            "X-CSRF-Token": desk.cookies["aica_human"],
+        }
+        invalid_rejection = {"decision": "reject", "to_stage": "rollout"}
+        assert desk.post(url, json=invalid_rejection, headers=headers).status_code == 422
+        assert desk.post(url, json=body, headers=headers).is_success
+        assert observed == [("workshop", "p-102", "approve", "rollout_planning")]

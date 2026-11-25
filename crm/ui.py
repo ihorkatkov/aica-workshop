@@ -7,7 +7,8 @@ import secrets
 import time
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from .server_types import DealAction, ReviewChange
+from . import stages
+from .server_types import DealAction, ResetDataset, ReviewChange, StageDecision
 
 
 def install_ui(app, store):
@@ -75,8 +76,17 @@ def install_ui(app, store):
         return db.state(workspace)
 
     @app.post("/ui/reset", dependencies=[Depends(browser)])
-    def reset(db=Depends(store)):
-        return db.reset(workspace)
+    def reset(body: ResetDataset | None = None, db=Depends(store)):
+        return db.reset(workspace, body.dataset if body else "kickoff")
+
+    @app.post("/ui/proposals/{proposal_id}/decision", dependencies=[Depends(browser)])
+    def decide(proposal_id: str, body: StageDecision, db=Depends(store)):
+        try:
+            return stages.decide(db, workspace, proposal_id, body)
+        except NotImplementedError:
+            raise HTTPException(
+                501, "Stage decisions have not been implemented in this CRM."
+            ) from None
 
     @app.post("/ui/deals/{deal_id}/write", dependencies=[Depends(browser)])
     def write(deal_id: str, body: DealAction, db=Depends(store)):

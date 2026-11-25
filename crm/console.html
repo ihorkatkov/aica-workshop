@@ -2,14 +2,28 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="__CSRF__"><title>Deals · AICA CRM</title>
 <style>
 :root{font-family:Arial,Helvetica,sans-serif;color:#181818;background:#eef1f6;font-size:14px;--line:#d8dde6;--blue:#0176d3;--muted:#5c6674}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button,a{touch-action:manipulation}button{border:1px solid #b8c1cd;background:#fff;border-radius:4px;padding:8px 14px;color:#075da8;cursor:pointer;font-weight:600}button:hover{background:#f0f7ff}button:disabled{opacity:.5;cursor:wait}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #1b96ff;outline-offset:3px}[hidden]{display:none!important}.primary{background:var(--blue);border-color:var(--blue);color:white}.primary:hover{background:#025ba5}header{background:#fff;border-top:4px solid var(--blue);box-shadow:0 1px 3px #152b4420} .appbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 28px}.brand{text-decoration:none;display:flex;align-items:center;gap:12px;font-size:18px;font-weight:700;color:#16325c}.brand-icon{display:grid;place-items:center;width:34px;height:34px;background:#0176d3;color:#fff;border-radius:8px;font-size:14px}.tools{display:flex;gap:22px;align-items:center;flex-wrap:wrap}.tools a{color:#526174;text-decoration:none;font-size:13px}.tools a:hover{text-decoration:underline}.objectnav{border-top:1px solid #edf0f4;padding:0 28px;display:flex;align-items:center;gap:28px}.objectnav .workspace-link{font-size:13px;color:var(--muted);text-decoration:none}.objectnav .workspace-link:hover{text-decoration:underline}.objectnav button{border:0;border-bottom:3px solid var(--blue);border-radius:0;padding:12px 20px;color:#16325c;background:#edf5fc}main{max-width:1600px;margin:auto;padding:24px 28px}h1{font-size:24px;line-height:1.25;margin:4px 0 0;color:#16325c}h2{font-size:18px;margin:0;color:#16325c}h3{font-size:15px;margin:0}p{line-height:1.6}.panel{background:#fff;border:1px solid var(--line);border-radius:7px;overflow:hidden;box-shadow:0 2px 3px #16325c06}.panel-head{padding:22px 24px 16px;display:flex;justify-content:space-between;gap:16px;align-items:center}.eyebrow{font-size:12px;color:var(--muted);margin:0}.sub{font-size:12px;color:var(--muted);margin:7px 0 0}.toolbar{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:0 24px 18px}.filters{display:flex;gap:10px;min-width:50%}input,select{min-width:0;padding:9px 12px;border:1px solid #b8c1cd;border-radius:4px;background:white;color:inherit}input{flex:1;width:100%}.summary{display:flex;gap:18px;font-size:12px;color:var(--muted);flex-wrap:wrap}.summary strong{color:#263a53;font-variant-numeric:tabular-nums}.table-scroll{overflow:auto;max-height:calc(100vh - 315px);min-height:180px}table{border-collapse:collapse;width:100%;text-align:left;white-space:nowrap}caption{text-align:left}th{position:sticky;top:0;background:#f7f9fb;border-block:1px solid var(--line);font-size:12px;color:#485568;font-weight:600;z-index:1}th button{border:0;border-radius:0;background:transparent;color:inherit;padding:13px 18px;width:100%;text-align:left;font-size:12px}td{padding:14px 18px;border-bottom:1px solid #e8ecf1;font-size:13px}tbody tr:hover{background:#f5f9fe}tbody tr:last-child td{border-bottom:0}.record-link{padding:0;border:0;background:none;text-align:left;font-weight:600;color:#016bc1}.record-link:hover{text-decoration:underline;background:none}.record-id{font-size:11px;color:var(--muted);margin-top:5px}.badge{display:inline-block;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap;background:#edf1f6;color:#45566b}.badge.cleared{background:#e4f3eb;color:#226744}.badge.open{background:#fff2d5;color:#775313}.badge.expired,.badge.missing{background:#fbeae7;color:#9e352e}.back{margin:0 0 14px;padding:0;border:0;background:transparent;font-size:13px}.record-head{padding:24px;border-bottom:1px solid var(--line);background:#fafbfd}.record-title{display:flex;gap:14px;align-items:start}.record-icon{background:#ff9855;color:#fff;border-radius:6px;padding:9px;font-size:20px}.highlights{display:flex;gap:40px;flex-wrap:wrap;margin:24px 0 0}.highlights dt,.facts dt{color:var(--muted);font-size:12px;margin-bottom:7px}.highlights dd,.facts dd{margin:0;font-size:14px}.highlights dd{font-weight:600}.tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);padding:0 24px}.tabs button{border:0;border-radius:0;border-bottom:3px solid transparent;color:#566375;padding:17px 0 13px;font-weight:400}.tabs button[aria-selected=true]{border-color:var(--blue);color:#075da8;font-weight:700}.tab-content{padding:24px;max-width:1000px;min-height:320px}.section-heading{background:#f3f5f8;padding:11px 14px;font-size:13px;border-radius:3px}.facts{display:grid;grid-template-columns:1fr 1fr;column-gap:40px;margin:4px 0 24px}.facts>div{padding:17px 4px;border-bottom:1px solid #e6eaf0}.note{font-size:14px;margin:0;padding:16px 4px;line-height:1.65}.explain,.empty{color:var(--muted);font-size:13px;line-height:1.6}.empty{padding:26px}.event{display:flex;gap:16px;padding:18px 0;border-bottom:1px solid #edf0f4;line-height:1.6;font-size:14px}.event-marker{border-radius:4px;background:#edf4fc;padding:3px 7px;font-size:11px;color:#53677f;align-self:start;min-width:40px;text-align:center}.event small{color:var(--muted)}footer{display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:11px;margin-top:18px}#notice{display:none;background:#eaf5ed;border:1px solid #bbdcc5;border-radius:5px;padding:12px 18px;margin-bottom:16px;line-height:1.5}#notice:not(:empty){display:block}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}#notice.error{background:#fff0eb;border-color:#e7bca9}.deal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}dialog{width:min(440px,calc(100vw - 32px));border:1px solid var(--line);border-radius:8px;padding:24px;color:inherit;box-shadow:0 18px 65px #10244230}dialog::backdrop{background:#182a4555}dialog label{display:block;font-size:13px;font-weight:600;margin:22px 0 8px}dialog select,dialog input{width:100%}.dialog-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}#review-error{color:#9e352e;font-size:13px;line-height:1.5}#review-error:empty{display:none}@media(max-width:700px){.appbar{padding:12px 16px;align-items:start;flex-direction:column;gap:12px}.objectnav{padding:0 16px}main{padding:16px 12px}.panel-head{padding:18px 16px}.toolbar{padding:0 16px 16px;align-items:stretch;flex-direction:column}.filters{flex-direction:column}.summary{gap:12px}.table-scroll{max-height:55vh}td:first-child,th:first-child{position:sticky;left:0;background:#fff;z-index:1;box-shadow:1px 0 0 var(--line)}th:first-child{z-index:2;background:#f7f9fb}td:first-child{max-width:190px;white-space:normal;min-width:160px}.record-link{line-height:1.4}.record-head{padding:18px 16px}.record-title{display:grid;grid-template-columns:36px minmax(0,1fr)}.record-title>div{min-width:0}.record-title>button{grid-column:2;justify-self:start;margin-left:0!important}.record-icon{padding:8px;font-size:18px}.record-title h1{overflow-wrap:anywhere}.highlights{gap:20px}.tabs{padding:0 16px;gap:24px}.tab-content{padding:18px 16px}.facts{grid-template-columns:1fr}h1{font-size:21px}footer{flex-direction:column;gap:7px}.tools{gap:20px}}
+.objectnav button:not([aria-current="page"]){background:transparent;border-color:transparent;color:var(--muted)}
+.objectnav{gap:12px;flex-wrap:wrap}.queue-tools{display:flex;flex-wrap:wrap;gap:8px}
+.proposal-warning{color:#704100;background:#fff6df;border-left:3px solid #b98426;padding:9px 12px}.queue-body{padding:0 24px 22px}.proposal{padding:18px 0;border-top:1px solid var(--line)}
+.proposal h2{margin:4px 0 12px;font-size:18px}.proposal dl{margin:10px 0 14px;display:grid;grid-template-columns:max-content 1fr;gap:6px 16px}
+.proposal dt{font-weight:600;color:var(--muted)}.proposal dd{margin:0;overflow-wrap:anywhere}
+#queue-empty{border-top:1px solid var(--line);padding:28px 0;color:var(--muted)}
+@media(max-width:600px){.objectnav .workspace-link{display:none}.objectnav{gap:2px}.objectnav button{padding:12px 8px}.queue-body{padding:0 16px 18px}.proposal dl{grid-template-columns:1fr}.proposal dd{margin-bottom:6px}#proposal-view .panel-head{align-items:start;flex-wrap:wrap}}
 </style></head><body>
-<header><div class="appbar"><a class="brand" href="/" aria-label="AICA CRM home"><span class="brand-icon" aria-hidden="true">A</span>AICA CRM</a><nav class="tools" aria-label="Workshop tools"><button id="reset-crm">Reset CRM</button><a href="http://localhost:8000" target="_blank" rel="noopener">Chat with agent ↗</a><a href="http://localhost:5560/aica-lab/traces" target="_blank" rel="noopener">View traces ↗</a></nav></div><nav class="objectnav" aria-label="CRM navigation"><a href="/" class="workspace-link">Sales workspace</a><button id="nav-deals" aria-current="page">Deals</button></nav></header>
+<header><div class="appbar"><a class="brand" href="/" aria-label="AICA CRM home"><span class="brand-icon" aria-hidden="true">A</span>AICA CRM</a><nav class="tools" aria-label="Workshop tools"><button id="reset-crm">Reset CRM</button><a href="http://localhost:8000" target="_blank" rel="noopener">Chat with agent ↗</a><a href="http://localhost:5560/aica-lab/traces" target="_blank" rel="noopener">View traces ↗</a></nav></div><nav class="objectnav" aria-label="CRM navigation"><a href="/" class="workspace-link">Sales workspace</a><button id="nav-deals" aria-current="page">Customer pilots</button><button id="nav-proposals">Stage proposals</button></nav></header>
 <main><div id="notice" tabindex="-1" role="status" aria-live="polite"></div>
 <section class="panel" id="list-view" aria-label="Deals list"><div class="panel-head"><div><p class="eyebrow">Deals</p><h1>Customer pilots</h1><p class="sub" id="result-count"></p></div><button id="refresh">Refresh</button></div><div class="toolbar"><div class="summary" aria-label="CRM overview"><span><strong id="deal-count">—</strong> deals</span><span><strong id="kickoff-count">—</strong> kickoffs</span><span><strong id="review-count">—</strong> review requests</span></div><div class="filters"><input id="search" type="search" aria-label="Search deals" placeholder="Search company, site, or deal ID"><select id="filter" aria-label="Filter deals"><option value="all">All reviews</option><option value="cleared">Review: cleared</option><option value="open">Review: open</option><option value="missing">Review: missing</option><option value="expired">Review: expired</option></select></div></div><div id="deals" class="table-scroll" tabindex="0" role="region" aria-label="Scrollable deals table"><p class="empty">Loading deals…</p></div></section>
 <section id="record-view" hidden aria-label="Deal record"><button class="back" id="back">← All deals</button><div class="panel" id="detail"></div></section>
+<section id="proposal-view" class="panel" hidden aria-labelledby="queue-title">
+<div class="panel-head"><div><h1 id="queue-title" tabindex="-1">Stage proposals</h1><p id="queue-count" class="sub"></p></div>
+<div class="queue-tools"><button id="load-stretch">Load stretch pilots…</button><button id="queue-refresh">Refresh</button></div></div>
+<div class="queue-body" id="queue-body"></div></section>
+<dialog id="stage-dialog" aria-labelledby="stage-title"><form id="stage-form"><h2 id="stage-title">Edit proposal</h2>
+<p id="stage-subject"></p><label for="stage-destination">Approve stage</label><select id="stage-destination"><option value="rollout">Rollout</option><option value="rollout_planning">Rollout planning</option></select>
+<p id="stage-error" role="alert"></p><div class="dialog-actions"><button type="button" id="cancel-stage">Cancel</button><button id="confirm-stage" class="primary">Approve</button></div></form></dialog>
 <footer><span>Local workshop · synthetic data only · <span id="business-date"></span></span><span id="updated">Connecting to CRM…</span></footer></main>
 <dialog id="review-dialog" aria-labelledby="review-title"><form id="review-form"><h2 id="review-title">Update security review</h2><p id="review-deal" class="sub"></p><label for="review-status">Review status</label><select id="review-status"><option value="open">Open</option><option value="cleared">Cleared</option><option value="missing">Missing</option><option value="expired">Expired</option></select><div id="review-date-field"><label for="review-valid-until">Valid through</label><input id="review-valid-until" type="date"></div><p id="review-error" role="alert" tabindex="-1"></p><div class="dialog-actions"><button type="button" id="cancel-review">Cancel</button><button class="primary" id="save-review" type="submit">Save review status</button></div></form></dialog>
-<dialog id="reset-dialog" aria-labelledby="reset-title"><h2 id="reset-title">Reset CRM?</h2><p>Restore all deals to the starter data and clear their Activity, review changes, and kickoff records. This cannot be undone.</p><p id="reset-error" role="alert" tabindex="-1"></p><div class="dialog-actions"><button id="cancel-reset" autofocus>Cancel</button><button id="confirm-reset" class="primary">Reset CRM</button></div></dialog>
+<dialog id="reset-dialog" aria-labelledby="reset-title"><h2 id="reset-title">Reset CRM?</h2><p id="reset-description">Restore the kickoff dataset and clear saved proposals, Activity, review changes, and kickoff records. This cannot be undone.</p><p id="reset-error" role="alert" tabindex="-1"></p><div class="dialog-actions"><button id="cancel-reset" autofocus>Cancel</button><button id="confirm-reset" class="primary">Reset CRM</button></div></dialog>
 <script>
 const csrf=document.querySelector('meta[name="csrf-token"]').content;
 let data=null,selected=null,busy=false,recordOpen=false,activeTab='details',sortKey='id',sortDirection=1;
@@ -17,14 +31,21 @@ const $=id=>document.getElementById(id);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const badge=status=>`<span class="badge ${esc(status)}">${esc(status.replaceAll('_',' '))}</span>`;
 function notice(text,error=false){$('notice').textContent=text;$('notice').classList.toggle('error',error)}
-async function api(path,body){const response=await fetch('/ui/'+path,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});const result=await response.json();if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'The CRM could not complete this action.');return result}
+async function api(path,body){const response=await fetch('/ui/'+path,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});const result=await response.json();if(response.status===401)throw new Error('Your desk session has expired. Reload this page to reconnect.');if(!response.ok)throw new Error(typeof result.detail==='string'?result.detail:'The CRM could not complete this action.');return result}
 async function refresh(){try{data=await api('state');render();$('updated').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}catch(e){notice(e.message,true);if(!data)$('deals').innerHTML='<p class="empty">Unable to load deals. Use Refresh to try again.</p>'}}
 function sortedDeals(deals){
  return [...deals].sort((a,b)=>String(sortValue(a,sortKey)).localeCompare(String(sortValue(b,sortKey)),undefined,{numeric:true})*sortDirection);
 }
 function sortValue(d,key){return key==='company'?parts(d)[0]:key==='site'?parts(d)[1]:d[key]??''}
 function parts(d){const [company,...site]=d.title.split(' / ');return [company,site.join(' / ')||'—']}
-function openList(){recordOpen=false;notice('');render()}
+let queueOpen=globalThis.location?.hash==='#stage-proposals', resetDataset="kickoff", editingProposal=null;
+const recordRoute=/^#deal\/(D-\d+)\/(details|activity)$/.exec(globalThis.location?.hash||'');
+if(recordRoute){selected=recordRoute[1];activeTab=recordRoute[2];recordOpen=true}
+function rememberView(hash){
+ if(globalThis.location)history.replaceState(null,'',location.pathname+location.search+hash);
+}
+function rememberRecord(){rememberView('#deal/'+encodeURIComponent(selected)+'/'+activeTab)}
+function openList(){rememberView('');queueOpen=false;recordOpen=false;notice('');if(data)render()}
 function render(){
  $('reset-crm').disabled=busy;
  $('deal-count').textContent=data.deals.length;
@@ -38,29 +59,40 @@ function render(){
  const columns=[['company','Company'],['site','Site'],['stage','Stage'],['security_review','Security review'],['review_valid_until','Valid through'],['kickoffs','Kickoffs'],['review_requests','Review requests']];
  $('deals').innerHTML=deals.length?`<table><caption class="sr-only">Customer pilot deals</caption><thead><tr>${columns.map(([key,title])=>`<th scope="col" aria-sort="${sortKey===key?(sortDirection===1?'ascending':'descending'):'none'}"><button data-sort="${key}">${title}${sortKey===key?(sortDirection===1?' ↑':' ↓'):''}</button></th>`).join('')}</tr></thead><tbody>${deals.map(d=>`<tr><td><button class="record-link" data-deal="${esc(d.id)}" aria-label="Open ${esc(d.title)}, ${esc(d.id)}">${esc(parts(d)[0])}</button><div class="record-id">${esc(d.id)}</div></td><td>${esc(parts(d)[1])}</td><td>${esc(stage(d.stage))}</td><td>${badge(d.security_review)}</td><td>${esc(d.review_valid_until||'—')}</td><td>${d.kickoffs}</td><td>${d.review_requests}</td></tr>`).join('')}</tbody></table>`:'<p class="empty">No deals match this filter.</p>';
  document.querySelectorAll('[data-sort]').forEach(el=>el.onclick=()=>{sortDirection=sortKey===el.dataset.sort?-sortDirection:1;sortKey=el.dataset.sort;render();document.querySelector(`[data-sort="${sortKey}"]`).focus()});
- document.querySelectorAll('[data-deal]').forEach(el=>el.onclick=()=>{selected=el.dataset.deal;recordOpen=true;activeTab='details';notice('');render();$('record-title').focus()});
- $('list-view').hidden=recordOpen;$('record-view').hidden=!recordOpen;
+ document.querySelectorAll('[data-deal]').forEach(el=>el.onclick=()=>{selected=el.dataset.deal;recordOpen=true;activeTab='details';rememberRecord();notice('');render();$('record-title').focus()});
+ $('list-view').hidden=recordOpen||queueOpen;$('record-view').hidden=!recordOpen||queueOpen;
+ $('proposal-view').hidden=!queueOpen;
+ $('nav-deals').ariaCurrent=queueOpen?'false':'page';
+ $('nav-proposals').ariaCurrent=queueOpen?'page':'false';
+ if(queueOpen){renderQueue();return}
  const d=data.deals.find(d=>d.id===selected);
  if(!d){$('detail').innerHTML='<p class="empty">No deal selected. Try another search or filter.</p>';return}
- const events=data.audit.filter(e=>e.detail.deal_id===d.id&&['deal_updated','unsafe_write','promoted','review_changed'].includes(e.event)).slice().reverse();
+ const events=data.audit.filter(e=>e.detail.deal_id===d.id&&['deal_updated','unsafe_write','promoted','review_changed','stage_decided'].includes(e.event)).slice().reverse();
  const tabs=[['details','Details'],['activity','Activity']];
  $('detail').innerHTML=`<div class="record-head"><div class="record-title"><span class="record-icon" aria-hidden="true">▣</span><div><p class="eyebrow">Deal · ${esc(d.id)}</p><h1 id="record-title" tabindex="-1">${esc(d.title)}</h1></div><button id="record-refresh" style="margin-left:auto">Refresh</button></div><div class="deal-actions" aria-label="Deal actions"><button id="schedule-kickoff" class="primary" ${busy?'disabled':''}>Schedule kickoff</button><button id="request-review" aria-describedby="review-help" ${busy?'disabled':''}>Request security review</button><button id="edit-review" ${busy?'disabled':''}>Update review status</button></div><p id="review-help" class="sub">Request security review sets the review to Open and clears its previous validity date. No email is sent.</p><dl class="highlights"><div><dt>Stage</dt><dd>${esc(stage(d.stage))}</dd></div><div><dt>Security review</dt><dd>${badge(d.security_review)}</dd></div><div><dt>Kickoff meetings</dt><dd>${d.kickoffs}</dd></div><div><dt>Review requests</dt><dd>${d.review_requests}</dd></div></dl></div><div class="tabs" role="tablist" aria-label="Deal sections">${tabs.map(([id,title])=>`<button role="tab" id="tab-${id}" data-tab="${id}" aria-selected="${activeTab===id}" aria-controls="panel-${id}" tabindex="${activeTab===id?0:-1}">${title}</button>`).join('')}</div><section class="tab-content" id="panel-details" role="tabpanel" aria-labelledby="tab-details" ${activeTab!=='details'?'hidden':''}><h2 class="section-heading">Deal information</h2><dl class="facts"><div><dt>Company</dt><dd>${esc(parts(d)[0])}</dd></div><div><dt>Site</dt><dd>${esc(parts(d)[1])}</dd></div><div><dt>Deal ID</dt><dd>${esc(d.id)}</dd></div><div><dt>Stage</dt><dd>${esc(stage(d.stage))}</dd></div><div><dt>Security review</dt><dd>${badge(d.security_review)}</dd></div><div><dt>Review valid through</dt><dd>${esc(d.review_valid_until||'Not recorded')}</dd></div></dl><h2 class="section-heading">Notes</h2><p class="note">${esc(typeof d.notes==='string'?d.notes:JSON.stringify(d.notes))}</p></section><section class="tab-content" id="panel-activity" role="tabpanel" aria-labelledby="tab-activity" ${activeTab!=='activity'?'hidden':''}><h2>Activity history</h2><p class="sub">Newest first</p>${events.length?events.map(e=>`<div class="event"><span class="event-marker" aria-hidden="true">•</span><div><strong>${esc(eventLabel(e))}</strong><br><small>${esc(eventDetail(e))}</small></div></div>`).join(''):'<p class="empty">No activity recorded.</p>'}</section>`;
  $('record-refresh').onclick=refresh;
+ $('schedule-kickoff').hidden=['rollout','rollout_planning'].includes(d.stage);
  $('schedule-kickoff').onclick=()=>writeDeal(d.id,{action:'schedule_kickoff'},'Kickoff scheduled.');
  $('request-review').onclick=()=>writeDeal(d.id,{action:'request_review_update'},'Security review requested.');
  $('edit-review').onclick=()=>openReview(d);
 
- function selectTab(id){activeTab=id;render();$('tab-'+id).focus()}
+ function selectTab(id){activeTab=id;rememberRecord();render();$('tab-'+id).focus()}
  document.querySelectorAll('[data-tab]').forEach((el,index)=>{el.onclick=()=>selectTab(el.dataset.tab);el.onkeydown=e=>{let next;if(e.key==='ArrowRight')next=(index+1)%tabs.length;if(e.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;if(e.key==='Home')next=0;if(e.key==='End')next=tabs.length-1;if(next!==undefined){e.preventDefault();selectTab(tabs[next][0])}}});
 }
 function stage(value){return value?value.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase()):'Not recorded'}
 function eventLabel(e){
+ if(e.event==='stage_decided')return e.detail.status==='rejected'?'Stage proposal rejected':'Stage change approved';
  if(e.event==='review_changed')return 'Security review updated';
  if(e.detail.action==='schedule_kickoff')return 'Kickoff scheduled';
  if(e.detail.action==='request_review_update')return 'Security review requested';
  return 'Deal updated';
 }
 function eventDetail(e){
+ if(e.event==='stage_decided'){
+  const v=e.detail;
+  const outcome='Agent proposed '+stage(v.proposed_to_stage)+' · Owner '+(v.status==='rejected'?('rejected; '+(v.current_stage?'stage stayed '+stage(v.current_stage):'no stage change')):'approved '+stage(v.to_stage));
+  return [outcome,v.rationale,v.decided_at].filter(Boolean).join(' · ');
+ }
  const actor=e.detail.actor==='human'?'Human':e.detail.actor==='agent'?'Agent':e.event==='review_changed'||e.event==='promoted'?'CRM':'Agent';
  if(e.event==='review_changed')return [actor,e.detail.previous_status?stage(e.detail.previous_status)+' → '+stage(e.detail.status):stage(e.detail.status),e.detail.valid_until?'Valid through '+e.detail.valid_until:''].filter(Boolean).join(' · ');
  const after=e.detail.after;
@@ -78,7 +110,7 @@ async function writeDeal(id,body,message,review=false){
   if(result.status==='rejected')throw new Error(result.message||'The CRM could not complete this action.');
   saved=true;
   if(review)$('review-dialog').close();
-  data=await api('state');selected=id;recordOpen=true;activeTab='activity';
+  data=await api('state');selected=id;recordOpen=true;activeTab='activity';rememberRecord();
   $('updated').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
   notice(message);
  }catch(e){
@@ -89,8 +121,18 @@ async function writeDeal(id,body,message,review=false){
   if(review&&$('review-dialog').open)$('review-error').focus();else $('notice').focus();
  }
 }
-$('reset-crm').onclick=()=>{if(busy)return;$('reset-error').textContent='';$('reset-dialog').showModal()};
-$('cancel-reset').onclick=()=>{$('reset-dialog').close();$('reset-crm').focus()};
+function openReset(dataset){
+ if(busy)return;
+ resetDataset=dataset;
+ const stretch=dataset==='stretch';
+ $('reset-title').textContent=stretch?'Load stretch pilots?':'Reset CRM?';
+ $('reset-description').textContent=(stretch?'Replace this workspace with the stretch dataset. D-101 through D-104 will be active pilots.':'Restore this workspace to the kickoff dataset.')+' Saved proposals, activity and deal changes will be cleared. This cannot be undone.';
+ $('confirm-reset').textContent=stretch?'Load stretch pilots':'Reset CRM';
+ $('reset-error').textContent='';$('reset-dialog').showModal();
+}
+$('reset-crm').onclick=()=>openReset('kickoff');
+$('load-stretch').onclick=()=>openReset('stretch');
+$('cancel-reset').onclick=()=>{$('reset-dialog').close();$(resetDataset==='stretch'?'load-stretch':'reset-crm').focus()};
 $('reset-dialog').oncancel=e=>{if(busy)e.preventDefault()};
 $('confirm-reset').onclick=async()=>{
  if(busy)return;
@@ -98,13 +140,13 @@ $('confirm-reset').onclick=async()=>{
  if(data)render();
  let saved=false;
  try{
-  await api('reset',{});saved=true;
+  await api('reset',{dataset:resetDataset});saved=true;
   data=await api('state');
-  selected=null;recordOpen=false;activeTab='details';sortKey='id';sortDirection=1;
+  selected=null;recordOpen=false;rememberView(queueOpen?'#stage-proposals':'');activeTab='details';sortKey='id';sortDirection=1;
   $('search').value='';$('filter').value='all';
   $('reset-dialog').close();
   $('updated').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  notice('CRM reset. Starter deals restored and Activity cleared.');
+  notice(resetDataset==='stretch'?'Stretch pilots D-101 through D-104 loaded.':'Kickoff dataset restored.');
  }catch(e){
   $('reset-error').textContent=saved?'CRM was reset, but the records could not be refreshed. Close this dialog and use Refresh.':e.message;
   $('reset-error').focus();
@@ -126,5 +168,81 @@ $('review-status').onchange=updateDateField;
 $('cancel-review').onclick=()=>{$('review-dialog').close();$('edit-review').focus()};
 $('review-dialog').oncancel=e=>{if(busy)e.preventDefault()};
 $('review-form').onsubmit=e=>{e.preventDefault();writeDeal(editingDeal,{status:$('review-status').value,valid_until:$('review-status').value==='cleared'?$('review-valid-until').value:null},'Security review updated.',true)};
+function renderQueue(){
+ const pending=(data.proposals||[]).filter(p=>p.status==='pending').sort((a,b)=>a.deal_id.localeCompare(b.deal_id,undefined,{numeric:true}));
+ $('queue-count').textContent=pending.length+' pending';
+ $('queue-body').innerHTML=pending.length?pending.map(p=>{
+  const deal=data.deals.find(d=>d.id===p.deal_id);
+  const id=esc(p.id);
+  const stale=!deal || deal.stage!==p.from_stage;
+  const incomplete=!(typeof p.rationale==='string' && p.rationale.trim());
+  const blocked=stale||incomplete;
+  const warning=stale?'The deal has changed since this proposal was made from '+stage(p.from_stage)+'. Review the current stage.':incomplete?'This proposal is missing a rationale.':'';
+  return `<article class="proposal" aria-label="${esc(p.deal_id)} · ${esc(deal?.title||p.deal_id)}"><span class="record-id">${esc(p.deal_id)}</span><h2>${esc(deal?.title||p.deal_id)}</h2>
+  <dl><dt>Current stage</dt><dd>${esc(stage(deal?.stage))}</dd><dt>Agent proposes</dt><dd>${esc(stage(p.to_stage))}</dd>
+  <dt>Agent rationale</dt><dd>${esc(p.rationale)||'Not provided'}</dd><dt>Customer evidence</dt><dd>${esc(deal?.notes)}</dd></dl>
+  ${warning?`<p class="proposal-warning">${esc(warning)}</p>`:''}
+  <div class="queue-tools"><button title="Approve ${esc(p.deal_id)}" class="primary" ${blocked?'disabled':''} data-approve="${id}">Approve ${esc(stage(p.to_stage))}</button>
+  <button title="Edit ${esc(p.deal_id)}" ${blocked?'disabled':''} data-edit="${id}">Edit proposal</button><button title="Reject ${esc(p.deal_id)}" data-reject="${id}">Reject</button></div></article>`;
+ }).join(''):'<p id="queue-empty">No stage proposals awaiting review. Refresh after the agent submits a proposal.</p>';
+ document.querySelectorAll('#queue-body button').forEach(button=>{
+  button.disabled=button.disabled||busy;
+  button.onclick=()=>{
+   const {approve,edit,reject}=button.dataset;
+   const proposal=pending.find(p=>String(p.id)===(approve??edit??reject));
+   if(!proposal||busy)return;
+   if(edit!==undefined){
+    editingProposal=proposal;
+    $('stage-subject').textContent=proposal.deal_id+' · Agent proposed '+stage(proposal.to_stage);
+    $('stage-destination').value=proposal.to_stage;
+    $('stage-error').textContent='';updateApprovalLabel();$('stage-dialog').showModal();
+   }else submitDecision(proposal,{decision:approve!==undefined?'approve':'reject'});
+  };
+ });
+}
+function updateApprovalLabel(){$('confirm-stage').textContent='Approve '+stage($('stage-destination').value)}
+async function submitDecision(p,body){
+ if(busy)return;
+ const editing=$('stage-dialog').open;
+ busy=true;render();$('confirm-stage').disabled=true;$('cancel-stage').disabled=true;
+ let accepted=false;
+ try{
+  const result=await api('proposals/'+encodeURIComponent(p.id)+'/decision',body);
+  if(result.status==='rejected'&&body.decision!=='reject')throw new Error(result.message||'The CRM refused this decision.');
+  accepted=true;if(editing)$('stage-dialog').close();
+  data=await api('state');
+  const saved=(data.proposals||[]).find(item=>item.id===p.id);
+  const expected=body.decision==='approve'?'approved':'rejected';
+  const deal=data.deals.find(d=>d.id===p.deal_id);
+  const destination=body.to_stage??p.to_stage;
+  if(saved?.status!==expected || (expected==='approved' && (saved.to_stage!==destination || deal?.stage!==destination))){
+   throw new Error('The saved proposal and deal do not confirm this decision. Refresh to check their status.');
+  }
+  notice(p.deal_id+(expected==='approved'?' approved for '+stage(saved.to_stage):' proposal rejected')+'. ');
+  const activity=document.createElement('button');
+  activity.className='record-link';activity.textContent='View activity';
+  activity.onclick=()=>{
+   openList();selected=p.deal_id;recordOpen=true;activeTab='activity';rememberRecord();render();$('record-title').focus();
+  };
+  $('notice').append(activity);
+ }catch(e){
+  if(editing&&!accepted)$('stage-error').textContent=e.message;
+  else notice(accepted?'Decision submitted. '+e.message:e.message,true);
+ }finally{
+  busy=false;render();$('confirm-stage').disabled=false;$('cancel-stage').disabled=false;
+  if(!$('stage-dialog').open)$('notice').focus();
+ }
+}
+$('stage-destination').onchange=updateApprovalLabel;
+$('cancel-stage').onclick=()=>$('stage-dialog').close();
+$('stage-dialog').oncancel=e=>{if(busy)e.preventDefault()};
+$('stage-form').onsubmit=e=>{
+ e.preventDefault();
+ const body={decision:'approve'}, destination=$('stage-destination').value;
+ if(destination!==editingProposal.to_stage)body.to_stage=destination;
+ submitDecision(editingProposal,body);
+};
+$('nav-proposals').onclick=async()=>{if(busy)return;queueOpen=true;rememberView('#stage-proposals');recordOpen=false;notice('');if(data)render();await refresh();$('queue-title').focus()};
+$('queue-refresh').onclick=refresh;
 $('back').onclick=()=>{openList();$('search').focus()};$('nav-deals').onclick=openList;$('refresh').onclick=refresh;$('search').oninput=()=>data&&render();$('filter').onchange=()=>data&&render();refresh();
 </script></body></html>

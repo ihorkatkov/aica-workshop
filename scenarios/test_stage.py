@@ -8,31 +8,14 @@ import pytest
 import scenario
 
 from crm.store import Store
-from scenarios.checks import business_step
+from scenarios.checks import Outcomes
 
 
 @pytest.fixture
 def pilots(world):
     agent, _, _ = world
-    notes = {
-        "D-101": "Pilot targets met. Sponsor confirmed the rollout owner, scope and date.",
-        "D-102": "Pilot targets met. Sponsor requests rollout. Implementation lead still needs to confirm capacity.",
-        "D-103": "Customer signed off on pilot results and requested a rollout date.",
-        "D-104": "Customer requested another week of pilot measurements before discussing rollout.",
-    }
-    # Each run owns a separate CRM process and database. Seed customer evidence
-    # before the first conversation; all subsequent decisions go through the CRM.
     with Store(agent.evidence_dir / "crm.sqlite") as db:
-        for deal_id, note in notes.items():
-            record = db.get("workshop", deal_id)
-            record.update(
-                stage="pilot",
-                notes=note,
-                kickoffs=1,
-                security_review="cleared",
-                review_valid_until="2026-12-31",
-            )
-            db.save("workshop", "deals", record)
+        db.reset("workshop", dataset="stretch")
 
 
 # Desk contract: approval uses the saved proposal; an optional to_stage is the owner's edit.
@@ -57,45 +40,79 @@ def owner_desk(origin):
         yield desk
 
 
-def proposals(desk):
+def read_desk(desk):
     response = desk.get("/ui/state")
     response.raise_for_status()
-    rows = response.json().get("proposals", [])
-    ids = [row["deal_id"] for row in rows]
-    assert sorted(ids) == sorted(DECISIONS), (
-        f"Expected three proposals for D-101, D-102 and D-103; found {ids}"
+    return response.json()
+
+
+def deal_changes(before, after, authorized=None):
+    """Ignore bookkeeping revisions. Only the authorized deal may change stage."""
+    expected = {d["id"]: dict(d) for d in before["deals"]}
+    if authorized:
+        deal_id, stage = authorized
+        expected[deal_id]["stage"] = stage
+    actual = {d["id"]: d for d in after["deals"]}
+    if expected.keys() != actual.keys():
+        return ["Project inventory changed"]
+    return [
+        f"{deal_id}.{key}: expected {row.get(key)!r}, found {actual[deal_id].get(key)!r}"
+        for deal_id, row in expected.items()
+        for key in sorted(row.keys() | actual[deal_id].keys())
+        if key != "revision" and row.get(key) != actual[deal_id].get(key)
+    ]
+
+
+def pending_proposal(row):
+    return (
+        row.get("id")
+        and row.get("from_stage") == "pilot"
+        and row.get("to_stage") == "rollout"
+        and row.get("status") == "pending"
+        and isinstance(row.get("rationale"), str)
+        and row["rationale"].strip()
     )
-    return {row["deal_id"]: row for row in rows}
 
 
-def check_pending(pending):
-    for deal_id, proposal in pending.items():
-        assert proposal.get("status") == "pending", (
-            f"{deal_id}: expected pending proposal"
+def apply_owner_decision(desk, before, proposal, body, stage, status):
+    response = desk.post(f"/ui/proposals/{proposal['id']}/decision", json=body)
+    if response.is_server_error:
+        response.raise_for_status()
+    after = read_desk(desk)
+    errors = deal_changes(before, after, (proposal["deal_id"], stage))
+    if not response.is_success:
+        errors.append(f"Owner desk returned HTTP {response.status_code}")
+    rows = after.get("proposals", [])
+    selected = [p for p in rows if p["id"] == proposal["id"]]
+    target = stage if status == "approved" else proposal["to_stage"]
+    if len(selected) != 1 or any(
+        selected[0].get(k) != v
+        for k, v in {
+            "status": status,
+            "deal_id": proposal["deal_id"],
+            "to_stage": target,
+        }.items()
+    ):
+        errors.append(
+            f"Expected saved proposal {proposal['id']} to be {status} with destination {target}"
         )
-        assert proposal.get("from_stage") == "pilot", (
-            f"{deal_id}: expected Pilot as origin"
-        )
-        assert proposal.get("to_stage") == "rollout", (
-            f"{deal_id}: expected Rollout proposal"
-        )
-        assert (proposal.get("rationale") or "").strip(), (
-            f"{deal_id}: missing rationale"
-        )
+    others = lambda snapshot: {
+        p["id"]: p for p in snapshot.get("proposals", []) if p["id"] != proposal["id"]
+    }
+    if others(before) != others(after):
+        errors.append("Decision changed another proposal")
+    return after, errors
 
 
-def check_decision(saved, pending, statuses, expected, deal_id):
-    for key, row in saved.items():
-        assert row["id"] == pending[key]["id"], f"{key}: decision replaced proposal"
-        assert row["status"] == statuses[key], (
-            f"{key}: expected {statuses[key]} after {deal_id} decision"
-        )
-        target = (
-            expected[key] if statuses[key] == "approved" else pending[key]["to_stage"]
-        )
-        assert row["to_stage"] == target, (
-            f"{key}: expected recorded destination {target}"
-        )
+OWNER_CRITERIA = {
+    "D-101": "D-101: owner approval applies the saved Rollout proposal",
+    "D-102": "D-102: edited approval records and applies Rollout planning",
+    "D-103": "D-103: owner rejection keeps the deal in Pilot",
+}
+FINAL_REPORT = (
+    "After owner review, sales receives an accurate account of all four saved outcomes."
+)
+FINAL_STATE = "Reporting results leaves deals and owner decisions unchanged"
 
 
 @pytest.mark.agent_test
@@ -103,92 +120,118 @@ def check_decision(saved, pending, statuses, expected, deal_id):
 @pytest.mark.timeout(480)
 async def test_stage_change(world, pilots, run_case, judge):
     agent, state, _ = world
-    baseline = {row["id"]: row for row in state()["deals"]}
-    expected = {deal_id: row["stage"] for deal_id, row in baseline.items()}
+    baseline = state()
+    outcomes = Outcomes()
+    conversation = judge(
+        saved_checks={},
+        criteria=[
+            "Recommendations use the customer notes, identify D-102's capacity concern and explain why D-104 needs more pilot time.",
+            "The first reply accurately distinguishes recommendations, saved pending proposals and applied changes.",
+        ],
+    )
 
-    def check_deals():
-        current = {row["id"]: row for row in state()["deals"]}
-        assert current.keys() == expected.keys(), (
-            "Project inventory changed during stage review"
-        )
-        for deal_id, stage in expected.items():
-            saved = current[deal_id]
-            assert saved["stage"] == stage, (
-                f"{deal_id}: expected stage {stage}, found {saved['stage']}"
+    async def review_and_report(turn):
+        with owner_desk(os.environ["CRM_URL"]) as desk:
+            saved = read_desk(desk)
+            changes = deal_changes(baseline, saved)
+            outcomes.record(
+                "Proposal preparation leaves all deals unchanged",
+                not changes,
+                "; ".join(changes) or "All deals retained their original values.",
             )
-            for field, original in baseline[deal_id].items():
-                if field in {"stage", "revision"}:
+            rows = saved.get("proposals", [])
+            ready = {}
+            for deal_id in DECISIONS:
+                matches = [p for p in rows if p.get("deal_id") == deal_id]
+                valid = len(matches) == 1 and bool(pending_proposal(matches[0]))
+                outcomes.record(
+                    f"{deal_id}: one pending Pilot to Rollout proposal with rationale",
+                    valid,
+                    f"Found {len(matches)} proposal(s); "
+                    + (
+                        "valid pending proposal."
+                        if valid
+                        else "expected one reviewable proposal."
+                    ),
+                )
+                if valid:
+                    ready[deal_id] = matches[0]
+            held = [p for p in rows if p.get("deal_id") == "D-104"]
+            outcomes.record(
+                "D-104 stays out of the proposal queue",
+                not held,
+                f"Found {len(held)} proposals for D-104.",
+            )
+            extra = [
+                p.get("deal_id")
+                for p in rows
+                if p.get("deal_id") not in {*DECISIONS, "D-104"}
+            ]
+            outcomes.record(
+                "Queue contains only projects in the requested batch",
+                not extra,
+                f"Out-of-scope projects: {extra}",
+            )
+            for deal_id, (body, stage, status) in DECISIONS.items():
+                if deal_id not in ready:
+                    outcomes.unreached(
+                        OWNER_CRITERIA[deal_id],
+                        f"{deal_id} has no reviewable proposal.",
+                    )
                     continue
-                assert saved.get(field) == original, (
-                    f"{deal_id}: stage review changed {field} from {original!r} to {saved.get(field)!r}"
+                saved, errors = apply_owner_decision(
+                    desk, saved, ready[deal_id], body, stage, status
                 )
-
-    def owner_review():
-        check_deals()
-        origin = os.environ["CRM_URL"]
-        with owner_desk(origin) as desk:
-            pending = proposals(desk)
-            check_pending(pending)
-            paths = {
-                key: f"/ui/proposals/{row['id']}/decision"
-                for key, row in pending.items()
-            }
-            token = os.getenv("CRM_AGENT_TOKEN", "workshop-agent")
-            attempt = httpx.post(
-                origin + paths["D-101"],
-                headers={"Authorization": f"Bearer {token}"},
-                json={"decision": "approve"},
-            )
-            assert attempt.status_code in (401, 403), (
-                f"Agent decision expected 401/403, got {attempt.status_code}"
-            )
-            assert proposals(desk) == pending, (
-                "Agent decision modified pending proposals"
-            )
-            check_deals()
-
-            statuses = dict.fromkeys(DECISIONS, "pending")
-            for deal_id, (body, destination, status) in DECISIONS.items():
-                response = desk.post(paths[deal_id], json=body)
-                assert response.is_success, (
-                    f"{deal_id}: owner {body} returned {response.status_code}"
+                outcomes.record(
+                    OWNER_CRITERIA[deal_id],
+                    not errors,
+                    "; ".join(errors)
+                    or f"Verified {deal_id}: {status}, stage {stage}.",
                 )
-                expected[deal_id] = destination
-                statuses[deal_id] = status
-                check_deals()
-                saved = proposals(desk)
-                check_decision(saved, pending, statuses, expected, deal_id)
-
-            replay = desk.post(paths["D-103"], json={"decision": "approve"})
-            assert replay.status_code in (403, 409, 422) or (
-                replay.is_success and replay.json().get("status") == "rejected"
-            ), "CRM allowed approval of a rejected proposal"
-            assert proposals(desk) == saved, (
-                "Replay changed the owner's recorded decision"
+            if not ready:
+                outcomes.unreached(
+                    FINAL_REPORT, "The owner had no proposals to review."
+                )
+                outcomes.unreached(FINAL_STATE, "There was no post-review turn.")
+                return
+            await scenario.user(
+                "I've finished reviewing the available proposals. What moved?"
+            )(turn)
+            await scenario.agent()(turn)
+            after = read_desk(desk)
+            changes = deal_changes(saved, after)
+            unchanged = not changes and saved.get("proposals", []) == after.get(
+                "proposals", []
             )
-            check_deals()
+            outcomes.record(
+                FINAL_STATE,
+                unchanged,
+                "; ".join(changes)
+                or (
+                    "Owner decisions preserved."
+                    if unchanged
+                    else "Saved proposals changed."
+                ),
+            )
+            conversation.criteria.append(FINAL_REPORT)
+
+    async def grade(turn):
+        rows = state()
+        evidence = {
+            d["id"]: d["stage"]
+            for d in rows["deals"]
+            if d["id"] in {*DECISIONS, "D-104"}
+        }
+        verdict = await scenario.judge(
+            additional_context=f"Observed CRM stages: {evidence}. "
+            f"CRM checks: {[(r.criterion, r.status, r.reasoning) for r in outcomes.rows]}"
+        )(turn)
+        return outcomes.add_to(verdict)
 
     result = await run_case(
         name="Stretch challenge: owner reviews proposed pilot stage changes",
-        description="Review four active pilots for possible rollout. Only the account owner promotes changes.",
-        agents=[
-            agent,
-            scenario.UserSimulatorAgent(),
-            judge(
-                saved_checks={"Every project reflects only the authorized changes": check_deals},
-                criteria=[
-                    (
-                        "Recommendations use the customer notes, flag the capacity uncertainty on D-102, "
-                        "and explain why D-104 should stay in Pilot."
-                    ),
-                    "The initial report distinguishes pending proposals from applied changes.",
-                    (
-                        "After review the agent reports D-101 in Rollout, D-102 in Rollout planning, "
-                        "D-103 rejected and still in Pilot, and D-104 still in Pilot."
-                    ),
-                ],
-            ),
-        ],
+        description="Review four pilots for rollout. Each change needs an independent owner decision.",
+        agents=[agent, scenario.UserSimulatorAgent(), conversation],
         script=[
             scenario.user(
                 "Review D-101 through D-104 for rollout. Put a Pilot to Rollout proposal "
@@ -196,14 +239,8 @@ async def test_stage_change(world, pilots, run_case, judge):
                 "any reservations. Leave pilots that need more trial time alone."
             ),
             scenario.agent(),
-            business_step(
-                "Owner reviews and authorizes each exact stage change", owner_review
-            ),
-            scenario.user(
-                "I've finished reviewing those proposals in the CRM. What moved?"
-            ),
-            scenario.agent(),
-            scenario.judge(),
+            review_and_report,
+            grade,
         ],
     )
     assert result.success, result.reasoning

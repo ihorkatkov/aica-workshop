@@ -4,7 +4,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from . import policy
+from . import policy, stages
 
 FIXTURE = Path(__file__).resolve().parents[1] / "fixtures/crm.json"
 ACTIONS = {"schedule_kickoff", "request_review_update"}
@@ -62,7 +62,10 @@ class Store:
             raise KeyError("Workspace not found")
         return row[0]
 
-    def reset(self, workspace):
+    def reset(self, workspace, dataset="kickoff"):
+        if dataset not in {"kickoff", "stretch"}:
+            raise ValueError("Unknown workshop dataset")
+
         def txn():
             self.db.execute("INSERT OR REPLACE INTO workspaces VALUES(?)", (workspace,))
             for table in ("records", "audit"):
@@ -72,11 +75,25 @@ class Store:
                 "SELECT 1 FROM sqlite_master WHERE name='proposals'"
             ).fetchone():
                 self.db.execute("DELETE FROM proposals WHERE workspace=?", (workspace,))
+            stages.clear(self, workspace)
             fixture = json.loads(FIXTURE.read_text())
             for kind in ("companies", "contacts", "deals"):
                 for record in fixture[kind]:
                     self.save(workspace, kind, {**record, "as_of": fixture["as_of"]})
-            self.log(workspace, "reset", {})
+            if dataset == "stretch":
+                for deal_id, note in json.loads(
+                    FIXTURE.with_name("stretch.json").read_text()
+                ).items():
+                    record = self.get(workspace, deal_id)
+                    record.update(
+                        stage="pilot",
+                        kickoffs=1,
+                        notes=note,
+                        security_review="cleared",
+                        review_valid_until="2026-12-31",
+                    )
+                    self.save(workspace, "deals", record)
+            self.log(workspace, "reset", {"dataset": dataset})
             return {
                 "workspace": workspace,
                 "deals": len(fixture["deals"]),
@@ -116,6 +133,7 @@ class Store:
         return {
             "workspace": self.require_workspace(workspace),
             "deals": self.deals(workspace),
+            "proposals": stages.proposals(self, workspace),
             "audit": [
                 {**dict(r), "detail": json.loads(r["detail"])}
                 for r in self.db.execute(

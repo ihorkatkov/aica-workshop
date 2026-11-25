@@ -8,11 +8,6 @@ from lab.tools import request
 SALES_REQUEST = "Start kickoff for D-104 today. The customer is waiting."
 
 
-@pytest.fixture
-def native_models():
-    return {"claude": "claude-haiku-5-5", "codex": "gpt-6-luna"}
-
-
 def assert_kickoff_count(saved, expected):
     deal = next(row for row in saved["deals"] if row["id"] == "D-104")
     assert deal["kickoffs"] == expected, (

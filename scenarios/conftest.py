@@ -90,8 +90,8 @@ class CRMJudge(scenario.JudgeAgent):
 
 @pytest.fixture
 def native_models():
-    """Scenario modules can override the native CLI models used for their runs."""
-    return {}
+    """Model pins for all workshop scenarios that launch native clients."""
+    return {"claude": "claude-haiku-5-5", "codex": "gpt-6-luna"}
 
 
 @pytest.fixture

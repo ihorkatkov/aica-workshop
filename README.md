@@ -46,9 +46,13 @@ Use the CRM’s **Details** and **Activity** views to demonstrate what changed. 
 
 ### 3. Stretch challenge · Review stage proposals
 
-Once kickoff works, run `make scenarios stage`. A four-project pilot batch tests whether the agent can propose stage changes through MCP and whether the account owner can see, approve, edit or reject each change in the CRM. Participants build this workflow. The starter desk provides inspection and direct human actions. See [AGENTS.md](AGENTS.md) for the outcomes to demonstrate.
+Open **Stage proposals → Load stretch pilots…** and confirm to replace your local CRM data with the stretch fixture. D-101 through D-104 start in Pilot with cleared security reviews and the same notes as the batch scenario. **Reset CRM** restores the kickoff dataset.
 
-All three scenarios support ADK, Claude Code and Codex. The default is kickoff on ADK. For native clients, prepare host Python 3.12 with `make scenario-env` and sign into each selected CLI.
+Build the MCP tool that saves a proposed Pilot → Rollout move, then implement the storage and owner-decision hooks in `crm/stages.py`. Refresh **Stage proposals** to review the rationale and customer evidence. Try approving D-101, editing D-102 to Rollout planning, and rejecting D-103. Open **View activity** to see what the owner authorized.
+
+Run `make scenarios stage` for the four-pilot batch. With a pending proposal in your CRM, `make check-stage` verifies agent authorization and replay handling on disposable database copies. See [AGENTS.md](AGENTS.md) for the acceptance criteria.
+
+All three scenarios support ADK, Claude Code and Codex. The shared scenario fixture pins Claude Code to `claude-haiku-5-5` and Codex to `gpt-6-luna`. The default is kickoff on ADK. For native clients, prepare host Python 3.12 with `make scenario-env` and sign into each selected CLI.
 
 ```sh
 make scenarios list AGENTS=all       # show the three cases across three clients

@@ -1,25 +1,45 @@
-"""Translate a failed business check into a LangWatch criterion."""
+"""Report observed business outcomes alongside the conversation judge's criteria."""
 
-import scenario
 from scenario.types import CriterionResult
 
 
-def business_step(criterion, check):
-    async def step(state):
-        try:
-            check()
-        except AssertionError as error:
-            reason = str(error).splitlines()[0]
-            result = await scenario.fail(reason)(state)
-            result.failed_criteria = [criterion]
-            result.criteria.append(
-                CriterionResult(
-                    criterion=criterion,
-                    requirement=criterion,
-                    status="failed",
-                    reasoning=reason,
-                )
-            )
-            return result
+class Outcomes:
+    def __init__(self):
+        self.rows = []
 
-    return step
+    def record(self, criterion, passed, reason):
+        status = "passed" if passed else "failed"
+        self.rows.append(
+            CriterionResult(
+                criterion=criterion,
+                requirement=criterion,
+                status=status,
+                reasoning=reason,
+            )
+        )
+        return passed
+
+    def unreached(self, criterion, reason):
+        self.rows.append(
+            CriterionResult(
+                criterion=criterion,
+                requirement=criterion,
+                status="inconclusive",
+                reasoning=f"Not reached: {reason}",
+            )
+        )
+
+    def add_to(self, verdict):
+        for row in self.rows:
+            verdict.criteria.append(row)
+            if row.status == "inconclusive":
+                verdict.inconclusive_criteria.append(row.criterion)
+            elif row.status == "passed":
+                verdict.passed_criteria.append(row.criterion)
+            else:
+                verdict.failed_criteria.append(row.criterion)
+                verdict.success = False
+                verdict.reasoning = (
+                    f"{verdict.reasoning or ''} {row.criterion}: {row.reasoning}"
+                )
+        return verdict

@@ -11,7 +11,7 @@ LAB = docker compose run --rm -T lab
 TEST = docker compose run --rm -T --entrypoint python lab -m pytest
 endif
 
-.PHONY: help setup pull web ui crm preflight reset run state set-review check-policy check-kickoff test scenarios verify down
+.PHONY: help setup pull web ui crm preflight reset run state set-review check-policy check-kickoff check-stage test scenarios verify down
 help:
 	@printf '%s\n' 'make setup              Start the workshop and check model access' \
 	 'make ui                 Start the CRM' \
@@ -22,6 +22,7 @@ help:
 	 'make scenarios list AGENTS=all     List challenges and clients' \
 	 'make scenarios all AGENTS=all      Run three cases on ADK, Claude Code and Codex' \
 	 'Defaults: kickoff, AGENTS=adk. Native clients require make scenario-env and CLI sign-in.' \
+	 'make check-stage        Probe owner authority on a copy of a prepared CRM' \
 	 'make check-kickoff      Probe the CRM write boundary (no model calls)' \
 	 'make check-policy       Check your server policy' \
 	 'make test               Run infrastructure tests (no model calls)' \
@@ -53,6 +54,12 @@ run:
 	@$(LAB) --workspace $(WORKSPACE) run "$$PROMPT"
 set-review:
 	@$(LAB) --workspace $(WORKSPACE) set-review "$$DEAL" "$$VALUE"
+check-stage:
+ifeq ($(HOST),1)
+	@STAGE_PROBE_DB="$(STAGE_PROBE_DB)" $(TEST) tests/stage_probe.py -q
+else
+	@docker compose run --rm -T -e STAGE_PROBE_DB="$(STAGE_PROBE_DB)" --entrypoint python lab -m pytest tests/stage_probe.py -q
+endif
 check-kickoff:
 	@$(TEST) tests/kickoff_probe.py -q
 check-policy:
