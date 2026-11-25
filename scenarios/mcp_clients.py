@@ -28,11 +28,13 @@ class NativeClient(scenario.AgentAdapter):
         for relative in (".mcp.json", ".claude/settings.json", ".codex/config.toml"):
             dest = self.cwd / relative
             dest.parent.mkdir(exist_ok=True)
-            dest.write_text(
-                (ROOT / relative)
-                .read_text()
-                .replace("http://127.0.0.1:8001/workspaces/workshop/mcp/", self.url)
-            )
+            template = (ROOT / relative).read_text()
+            if relative != ".claude/settings.json":
+                default_url = "http://127.0.0.1:8001/workspaces/workshop/mcp/"
+                if template.count(default_url) != 1:
+                    raise ValueError(f"Cannot scope {relative} to the scenario CRM")
+                template = template.replace(default_url, self.url)
+            dest.write_text(template)
         if name == "codex":
             home = self.cwd / "codex"
             home.mkdir()
@@ -65,6 +67,7 @@ class NativeClient(scenario.AgentAdapter):
             ]
         else:
             reply = self.cwd / "reply.txt"
+            reply.unlink(missing_ok=True)
             args = [
                 "codex",
                 "exec",

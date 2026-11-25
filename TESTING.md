@@ -12,6 +12,10 @@ The starter provides direct human CRM actions and an inspection UI over business
 
 Run `make scenarios d104 AGENTS=all` for ADK, Claude Code and Codex, or `make scenarios d104 AGENTS=codex` for one client. Each case starts a fresh CRM using your current policy. Compare the LangWatch conversation with the ordered calls in `calls.jsonl` and the saved deal and audit in `result.json` under `.lab/shared-mcp/`. The same selectors work with review, identity, retry and batch. Use `make scenarios list AGENTS=all` to inspect the full matrix before running it.
 
+The run title names the client. The verdict includes a separate persisted CRM criterion. On the starter the eight proposal-based cases are expected to fail until a participant implements the approval workflow. Inspect `result.json` for the conversation and CRM snapshots, or `calls.jsonl` for the ordered MCP requests and responses.
+
+In LangWatch 3.23.0, the run drawer can label an MCP call “no result” and show its response in the **Tool result** immediately below it. Expand that row to inspect the payload. An empty search result displays as a dash. **View trace** opens the Scenario turn. Native CLI inference runs outside the Python tracer, so the displayed model and cost can reflect simulator and judge calls and do not measure the full native run.
+
 Earlier results below are historical evidence for the previous implementation and do not describe the current starter.
 
 ---

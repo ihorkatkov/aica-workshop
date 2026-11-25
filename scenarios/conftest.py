@@ -1,8 +1,8 @@
-"""Fresh CRM workspace and ADK session per scenario; same agent as ADK Web."""
+"""Fresh CRM workspace and agent session for each scenario and client."""
 
-from contextlib import AsyncExitStack
 from functools import partial
 import os
+import json
 import uuid
 import pytest
 import pytest_asyncio
@@ -11,7 +11,13 @@ from scenario.config import ModelConfig
 from lab.config import ROOT, require_model, model_name
 from lab.runtime import Conversation
 from lab.tools import request as crm_request
-from lab.telemetry import setup
+from lab.telemetry import setup, flush, verify
+from scenarios.mcp_clients import NativeClient, RecordedClient, crm_server
+from google.adk.tools.mcp_tool.mcp_toolset import (
+    McpToolset,
+    StreamableHTTPConnectionParams,
+)
+from scenario.types import ScenarioResult, CriterionResult
 
 
 class ADKAdapter(scenario.AgentAdapter):
@@ -49,11 +55,77 @@ def pytest_generate_tests(metafunc):
     metafunc.parametrize("world", clients, indirect=True)
 
 
+class CRMJudge(scenario.JudgeAgent):
+    def __init__(self, *, check_saved, **kwargs):
+        super().__init__(**kwargs)
+        self.check_saved = check_saved
+
+    async def call(self, input):
+        verdict = await super().call(input)
+        if not isinstance(verdict, ScenarioResult):
+            return verdict
+        criterion = "Persisted CRM state matches the expected outcome"
+        try:
+            self.check_saved()
+        except AssertionError as error:
+            reason = (str(error) or "CRM state check failed").splitlines()[0][:600]
+            verdict.success = False
+            verdict.failed_criteria.append(criterion)
+            verdict.reasoning = (
+                f"{reason}. Conversation judge: {verdict.reasoning or ''}"
+            )
+            status = "failed"
+        else:
+            reason = "Verified through an independent CRM readback."
+            status = "passed"
+            verdict.passed_criteria.append(criterion)
+        verdict.criteria.append(
+            CriterionResult(
+                criterion=criterion,
+                requirement=criterion,
+                status=status,
+                reasoning=reason,
+            )
+        )
+        return verdict
+
+
+@pytest.fixture
+def run_case(world, request):
+    adapter, state, before = world
+
+    async def run(**kwargs):
+        client = request.node.callspec.params["world"]
+        title = kwargs.pop("name")
+        result = await scenario.run(
+            name=f"{title} [{client}]",
+            metadata={
+                "case": request.node.nodeid,
+                "workspace": before["workspace"],
+                "client": client,
+            },
+            **kwargs,
+        )
+        folder = adapter.evidence_dir
+        evidence = {
+            "workspace": before["workspace"],
+            "before": before,
+            "after": state(),
+            "case": request.node.nodeid,
+            "client": client,
+            "scenario": result.model_dump(mode="json"),
+        }
+        (folder / "result.json").write_text(json.dumps(evidence, indent=2))
+        flush()
+        verify(evidence["scenario"]["messages"][-1]["trace_id"])
+        return result
+
+    return run
+
+
 @pytest.fixture
 def judge():
-    return partial(
-        scenario.JudgeAgent, model=os.getenv("JUDGE_MODEL", "openai/gpt-6.2-sol")
-    )
+    return partial(CRMJudge, model=os.getenv("JUDGE_MODEL", "openai/gpt-6.2-sol"))
 
 
 @pytest_asyncio.fixture
@@ -69,21 +141,11 @@ async def world(request, monkeypatch, tmp_path):
     )
     workspace = "scenario-" + uuid.uuid4().hex
     client = request.param
-    use_mcp = (
-        client != "adk"
-        or request.module.__name__.endswith("test_d104")
-        or "," in request.config.getoption("--agents")
-        or request.config.getoption("--agents") == "all"
-    )
-    async with AsyncExitStack() as resources:
-        if use_mcp:
-            folder = ROOT / ".lab/shared-mcp" / f"{client}-{workspace}"
-            folder.mkdir(parents=True)
-            from scenarios.mcp_clients import crm_server, RecordedClient
-
-            url = await resources.enter_async_context(crm_server(folder, workspace))
-            monkeypatch.setenv("CRM_URL", url)
-
+    folder = ROOT / ".lab/shared-mcp" / f"{client}-{workspace}"
+    folder.mkdir(parents=True)
+    async with crm_server(folder, workspace) as url:
+        monkeypatch.setenv("CRM_URL", url)
+        mcp_url = f"{url}/workspaces/{workspace}/mcp/"
         crm_request(workspace, "POST", "reset", human=True)
 
         def state():
@@ -92,33 +154,18 @@ async def world(request, monkeypatch, tmp_path):
         before = state()
         if client == "adk":
             adapter = ADKAdapter(workspace)
-            if use_mcp:
-                from google.adk.tools.mcp_tool.mcp_toolset import (
-                    McpToolset,
-                    StreamableHTTPConnectionParams,
+            adapter.conversation.runner.agent.tools = [
+                McpToolset(
+                    connection_params=StreamableHTTPConnectionParams(url=mcp_url)
                 )
-
-                adapter.conversation.runner.agent.tools = [
-                    McpToolset(
-                        connection_params=StreamableHTTPConnectionParams(
-                            url=url + f"/workspaces/{workspace}/mcp/"
-                        )
-                    )
-                ]
+            ]
         else:
-            from scenarios.mcp_clients import NativeClient
-
-            adapter = NativeClient(
-                client, url + f"/workspaces/{workspace}/mcp/", tmp_path
-            )
+            adapter = NativeClient(client, mcp_url, tmp_path)
         try:
-            yield RecordedClient(adapter, folder) if use_mcp else adapter, state, before
+            yield RecordedClient(adapter, folder), state, before
         finally:
             if isinstance(adapter, ADKAdapter):
                 await adapter.conversation.close()
-            if use_mcp:
-                import json
-
-                (folder / "state.json").write_text(json.dumps(state(), indent=2))
-                print("CRM evidence directory:", folder)
+            (folder / "state.json").write_text(json.dumps(state(), indent=2))
+            print("CRM evidence directory:", folder)
             print("CRM evidence workspace:", workspace)

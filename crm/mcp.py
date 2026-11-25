@@ -5,6 +5,7 @@ import inspect
 import json
 from functools import wraps
 
+from httpx import HTTPStatusError
 from mcp.server.fastmcp import FastMCP
 from lab.tools import crm_tools
 
@@ -15,22 +16,26 @@ def install_mcp(app, workspace, call_log):
     def logged(tool):
         @wraps(tool)
         async def call(*args, **kwargs):
-            result = await asyncio.to_thread(tool, *args, **kwargs)
-            arguments = inspect.signature(tool).bind(*args, **kwargs).arguments
             if call_log is None:
-                return result
-            with call_log.open("a") as log:
-                print(
-                    json.dumps(
-                        {
-                            "tool": tool.__name__,
-                            "arguments": arguments,
-                            "result": result,
-                        }
-                    ),
-                    file=log,
-                )
-            return result
+                return await asyncio.to_thread(tool, *args, **kwargs)
+            entry = {
+                "tool": tool.__name__,
+                "arguments": inspect.signature(tool).bind(*args, **kwargs).arguments,
+            }
+            try:
+                entry["result"] = await asyncio.to_thread(tool, *args, **kwargs)
+            except HTTPStatusError as error:
+                entry["result"] = {
+                    "status": "http_error",
+                    "http_status": error.response.status_code,
+                    "message": error.response.text,
+                }
+                raise
+            finally:
+                if "result" in entry:
+                    with call_log.open("a") as log:
+                        print(json.dumps(entry), file=log)
+            return entry["result"]
 
         return call
 

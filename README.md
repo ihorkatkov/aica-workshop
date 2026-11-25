@@ -91,7 +91,7 @@ make scenarios retry AGENTS=claude,codex            # one case on two clients
 make scenarios all AGENTS=all                       # all nine cases on all three clients
 ```
 
-`make scenarios help` shows the selectors. The defaults are the review group and ADK. Use `CASE` with a pytest keyword or expression to narrow a group. For native runs, prepare host Python 3.12 once with `make scenario-env` and sign into the selected CLIs. Each case/client gets fresh CRM data and a new conversation. Follow-up turns resume that conversation. Native and mixed runs print an evidence directory with ordered MCP calls and final CRM state. Standard ADK-only runs print a workspace ID for `make state WORKSPACE=...`.
+`make scenarios help` shows the selectors. The defaults are the review group and ADK. Use `CASE` with a pytest keyword or expression to narrow a group. For native runs, prepare host Python 3.12 once with `make scenario-env` and sign into the selected CLIs. Each case/client gets fresh CRM data and a new conversation. Follow-up turns resume that conversation. Every run prints an evidence directory with the ordered MCP calls, the saved CRM state, and the LangWatch verdict.
 
 Try “Schedule the Northstar pilot.” Does the agent ask which company and site? For a batch, ask it to review all pilot-requested deals, prepare kickoff only for valid reviews, request review updates otherwise, and skip activities already recorded.
 
