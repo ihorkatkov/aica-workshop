@@ -1,9 +1,10 @@
 """Thin HTTP tools. All validation and writes happen in the CRM service."""
 
 import os
-from typing import Literal
+from typing import Annotated, Literal
 from urllib.parse import quote
 import httpx
+from pydantic import Field
 from . import config
 
 
@@ -51,10 +52,25 @@ def crm_tools(workspace):
         )
 
     def propose_stage_change(
-        deal_id: str, to_stage: Literal["rollout", "rollout_planning"], rationale: str
+        deal_id: str,
+        to_stage: Annotated[
+            Literal["rollout", "rollout_planning"],
+            Field(description=(
+                "Destination named by sales. A request to discuss or propose Rollout "
+                "uses rollout, even with open questions. Use rollout_planning when "
+                "sales requests the Rollout planning stage."
+            )),
+        ],
+        rationale: str,
     ) -> dict:
-        """Save a pending Pilot to rollout or rollout_planning proposal for owner review.
-        Include customer evidence and reservations. The deal stays in Pilot until approval.
+        """Save a pending Pilot stage change for owner review. When sales specifies a
+        destination, use that stage as to_stage. Put customer evidence and reservations
+        in rationale. The deal stays in Pilot until the owner approves the original
+        or edited destination.
+        Keep the returned proposal ID (PR-). When reporting the owner's decision, use
+        get_record on that ID to check its status (pending, approved, or rejected).
+        For an approved proposal, to_stage is the destination the owner authorized,
+        including any edit. Read the deal ID (D-) for its current stage.
         """
         return request(
             workspace,
