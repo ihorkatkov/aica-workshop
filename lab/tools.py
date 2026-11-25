@@ -1,6 +1,7 @@
 """Thin HTTP tools. All validation and writes happen in the CRM service."""
 
 import os
+from typing import Literal
 from urllib.parse import quote
 import httpx
 from . import config
@@ -49,8 +50,22 @@ def crm_tools(workspace):
             json={"action": action},
         )
 
+    def propose_stage_change(
+        deal_id: str, to_stage: Literal["rollout", "rollout_planning"], rationale: str
+    ) -> dict:
+        """Save a pending Pilot to rollout or rollout_planning proposal for owner review.
+        Include customer evidence and reservations. The deal stays in Pilot until approval.
+        """
+        return request(
+            workspace,
+            "POST",
+            f"deals/{quote(deal_id, safe='')}/proposals",
+            json={"to_stage": to_stage, "rationale": rationale},
+        )
+
     return [
         search_deals,
         get_record,
         write_deal,
+        propose_stage_change,
     ]
