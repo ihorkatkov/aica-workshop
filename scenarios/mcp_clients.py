@@ -9,6 +9,8 @@ from contextlib import asynccontextmanager, ExitStack
 import subprocess
 from pathlib import Path
 import scenario
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from lab.config import ROOT
 
 INSTRUCTIONS = (ROOT / "agents/workshop/prompt.md").read_text()
@@ -166,6 +168,27 @@ async def crm_server(folder, workspace):
         yield url
 
 
+def trace_native_tool(call):
+    # The CLI runs out of process. Attach the server-timed operation to the
+    # active Scenario agent span while replaying this turn's MCP evidence.
+    span = trace.get_tracer(__name__).start_span(
+        call["tool"],
+        start_time=call["start_ns"],
+        attributes={
+            "openinference.span.kind": "TOOL",
+            "tool.name": call["tool"],
+            "input.mime_type": "application/json",
+            "input.value": json.dumps(call["arguments"]),
+            "output.mime_type": "application/json",
+            "output.value": json.dumps(call["result"]),
+        },
+    )
+    result = call["result"]
+    if isinstance(result, dict) and result.get("status") == "http_error":
+        span.set_status(Status(StatusCode.ERROR, str(result["http_status"])))
+    span.end(end_time=call["end_ns"])
+
+
 class RecordedClient(scenario.AgentAdapter):
     """Expose actual server calls from this turn to Scenario and its judge."""
 
@@ -176,7 +199,13 @@ class RecordedClient(scenario.AgentAdapter):
         self.offset = 0
 
     async def call(self, input):
-        reply = await self.adapter.call(input)
+        try:
+            reply = await self.adapter.call(input)
+        finally:
+            messages = self.read_tool_calls()
+        return [*messages, {"role": "assistant", "content": reply}]
+
+    def read_tool_calls(self):
         path = self.evidence_dir / "calls.jsonl"
         messages = []
         if path.exists():
@@ -184,6 +213,8 @@ class RecordedClient(scenario.AgentAdapter):
                 log.seek(self.offset)
                 for line in log:
                     call = json.loads(line)
+                    if isinstance(self.adapter, NativeClient):
+                        trace_native_tool(call)
                     call_id = f"crm-{self.offset}-{len(messages)}"
                     messages.extend(
                         [
@@ -208,4 +239,4 @@ class RecordedClient(scenario.AgentAdapter):
                         ]
                     )
                 self.offset = log.tell()
-        return [*messages, {"role": "assistant", "content": reply}]
+        return messages

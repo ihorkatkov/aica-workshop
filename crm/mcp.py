@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import json
+import time
 from functools import wraps
 
 from httpx import HTTPStatusError
@@ -20,6 +21,7 @@ def install_mcp(app, workspace, call_log):
                 return await asyncio.to_thread(tool, *args, **kwargs)
             entry = {
                 "tool": tool.__name__,
+                "start_ns": time.time_ns(),
                 "arguments": inspect.signature(tool).bind(*args, **kwargs).arguments,
             }
             try:
@@ -33,6 +35,7 @@ def install_mcp(app, workspace, call_log):
                 raise
             finally:
                 if "result" in entry:
+                    entry["end_ns"] = time.time_ns()
                     with call_log.open("a") as log:
                         print(json.dumps(entry), file=log)
             return entry["result"]
