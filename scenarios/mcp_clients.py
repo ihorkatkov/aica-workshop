@@ -98,7 +98,7 @@ class NativeClient(scenario.AgentAdapter):
 
 
 @asynccontextmanager
-async def crm_server(folder, variant, workspace):
+async def crm_server(folder, workspace):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
@@ -110,9 +110,8 @@ async def crm_server(folder, variant, workspace):
                 [
                     sys.executable,
                     "-m",
-                    "facilitator.shared_mcp.server",
+                    "scenarios.crm_server",
                     str(folder),
-                    variant,
                     str(port),
                     "--workspace",
                     workspace,

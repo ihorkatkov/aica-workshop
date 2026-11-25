@@ -14,11 +14,7 @@ def deal(state):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "world",
-    [
-        pytest.param((client, policy), id=f"{policy}-{client}")
-        for policy in ("starter", "guarded")
-        for client in ("adk", "claude", "codex")
-    ],
+    ["adk", "claude", "codex"],
     indirect=True,
 )
 async def test_d104(world, judge, request):

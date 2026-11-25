@@ -46,16 +46,15 @@ async def world(request, monkeypatch, tmp_path):
         max_turns=6,
     )
     workspace = "scenario-" + uuid.uuid4().hex
-    target = getattr(request, "param", None)
+    client = getattr(request, "param", None)
     async with AsyncExitStack() as resources:
-        if target:
-            client, variant = target
-            folder = ROOT / ".lab/shared-mcp" / f"{variant}-{client}-{workspace}"
+        if client:
+            folder = ROOT / ".lab/shared-mcp" / f"{client}-{workspace}"
             folder.mkdir(parents=True)
             from scenarios.mcp_clients import crm_server, RecordedClient
 
             url = await resources.enter_async_context(
-                crm_server(folder, variant, workspace)
+                crm_server(folder, workspace)
             )
             monkeypatch.setenv("CRM_URL", url)
 
@@ -65,9 +64,9 @@ async def world(request, monkeypatch, tmp_path):
             return crm_request(workspace, "GET", "state", human=True)
 
         before = state()
-        if not target or client == "adk":
+        if not client or client == "adk":
             adapter = ADKAdapter(workspace)
-            if target:
+            if client:
                 from google.adk.tools.mcp_tool.mcp_toolset import (
                     McpToolset,
                     StreamableHTTPConnectionParams,
@@ -87,7 +86,7 @@ async def world(request, monkeypatch, tmp_path):
                 client, url + f"/workspaces/{workspace}/mcp/", tmp_path
             )
         try:
-            yield RecordedClient(adapter, folder) if target else adapter, state, before
+            yield RecordedClient(adapter, folder) if client else adapter, state, before
         finally:
             if isinstance(adapter, ADKAdapter):
                 await adapter.conversation.close()
