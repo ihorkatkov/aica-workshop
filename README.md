@@ -4,6 +4,19 @@ AICA Summit workshop: **agents propose, systems validate, humans promote.**
 
 There is one agent. You edit its prompt and tools, improve the CRM's rules, and test the same agent again. It starts deliberately unsafe. All customer records and activities are synthetic.
 
+## The business
+
+We sell scheduling software to organisations with several sites. Each deal in the CRM is one customer site that asked for a pilot. Picture Delta Health, a hospital group: kickoff is the day our engineers get logins to live patient scheduling in Amsterdam.
+
+- **Sales** asks for kickoff and wants it soon.
+- **Security** is the customer's security reviewer. They record a clearance with an expiry date. Nobody else can grant it.
+- **The account owner** decides whether a finished pilot becomes a rollout, because rollout commits our people, price and date.
+- **The agent** works for sales.
+
+Pilot requested → **security clearance** → Kickoff scheduled → Pilot → **owner decision** → Rollout planning or Rollout
+
+The main challenge is the first gate: a fact the CRM can check. The stretch is the second gate, four weeks later: D-101 to D-104 are now running pilots, and a person has to judge the evidence.
+
 ## Start
 
 Pair up. One laptop needs Docker Compose v2, Make, curl, OpenSSL, and a POSIX shell (macOS, Linux, or WSL). The facilitator gives your pair a private `.env` file with model access already configured. No individual provider account is needed.
@@ -25,6 +38,23 @@ Setup also prints your local **LangWatch** login for viewing traces. It checks a
 After `make setup`, start your signed-in `claude` or `codex` CLI from the workshop repository root. Accept the client’s workspace trust or CRM tool approval if prompted. The project config connects the CLI to the same local CRM workspace you see in **Customer pilots**.
 
 Try “Use the CRM to read D-104. What is its security review status?” Refresh **Customer pilots** to inspect changes after write requests. The default ADK chat still works as before.
+
+## How it fits together
+
+```
+you ─ chat ─▶ agent (prompt + model) ─ tool call ─▶ CRM server ─▶ policy ─▶ database
+              ADK, Claude Code or Codex            the only writer
+```
+
+The agent decides what to ask for. The CRM server decides what actually changes. All three clients get the same three tools: ADK imports them directly, Claude Code and Codex reach them over MCP.
+
+| Part | Where | Start here |
+| --- | --- | --- |
+| Prompt | [agents/workshop/prompt.md](agents/workshop/prompt.md) | Edit the one paragraph, restart the agent chat, ask about D-104 again. [lab/agent.py](lab/agent.py) loads it for ADK, and scenario runs pass the same file to Claude Code and Codex. |
+| Tools | [lab/tools.py](lab/tools.py) | Try one: ask the chat "Use get_record to read D-104". Add one: write a function inside `crm_tools`, give it a docstring, add it to the returned list. [crm/mcp.py](crm/mcp.py) publishes that same list over MCP, wired up in [.mcp.json](.mcp.json) and [.codex/config.toml](.codex/config.toml). |
+| CRM server | [crm/](crm/) | Change `validate` in [crm/policy.py](crm/policy.py). It runs before every kickoff or review-request write: return `None` to allow, or a dict with a reason to reject. Routes are in [crm/server.py](crm/server.py), writes in [crm/store.py](crm/store.py), the stretch hooks in [crm/stages.py](crm/stages.py). |
+
+Each tool is a thin HTTP call, so a new tool usually needs a new route in [crm/server.py](crm/server.py) too. The CRM reloads when you save. [scenarios/](scenarios/) holds the acceptance checks; leave them as they are.
 
 ## The exercise
 
