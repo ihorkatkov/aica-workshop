@@ -1,0 +1,5 @@
+.env
+.langwatch.env
+.lab/
+__pycache__/
+*.pyc

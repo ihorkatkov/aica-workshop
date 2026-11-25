@@ -1,0 +1,73 @@
+name: aica-agent-lab
+x-langwatch: &langwatch
+  image: langwatch/langwatch:3.23.0
+  env_file: .langwatch.env
+  environment:
+    BASE_HOST: http://localhost:5560
+    NEXTAUTH_URL: http://localhost:5560
+    LANGWATCH_ENDPOINT: http://app:5560
+    DATABASE_URL: postgresql://prisma:prisma@postgres:5432/mydb?schema=mydb
+    REDIS_URL: redis://redis:6379
+    CLICKHOUSE_URL: http://default:langwatch@clickhouse:8123/langwatch
+    CLICKHOUSE_BACKUP_METRICS_ENABLED: "false"
+    INSTALL_METHOD: docker
+    NODE_ENV: production
+    DISABLE_USAGE_STATS: "true"
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+    clickhouse: { condition: service_healthy }
+services:
+  app:
+    <<: *langwatch
+    ports: ["127.0.0.1:5560:5560"]
+    restart: unless-stopped
+  workers:
+    <<: *langwatch
+    command: ["pnpm", "run", "start"]
+    working_dir: /app/apps/worker
+    restart: unless-stopped
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+      POSTGRES_DB: mydb
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "prisma", "-d", "mydb"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  clickhouse:
+    image: langwatch/clickhouse-serverless:0.2.0
+    environment:
+      CLICKHOUSE_PASSWORD: langwatch
+    volumes: [chdata:/var/lib/clickhouse]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+  lab:
+    image: python:3.12-slim
+    profiles: ["lab"]
+    working_dir: /work
+    volumes: [".:/work"]
+    environment:
+      LANGWATCH_ENDPOINT: http://app:5560
+      PYTHONDONTWRITEBYTECODE: "1"
+    entrypoint: ["python", "-m", "lab"]
+volumes:
+  pgdata:
+  redisdata:
+  chdata:
