@@ -1,0 +1,3 @@
+google-adk==2.15.1
+openinference-instrumentation-google-adk==1.1.9
+langwatch==2.0.1

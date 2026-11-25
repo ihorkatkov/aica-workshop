@@ -1,3 +1,4 @@
+import asyncio
 from argparse import ArgumentParser
 import json
 import os
@@ -5,7 +6,6 @@ from pathlib import Path
 import sys
 
 from . import policy, solution
-from .agent import run, smoke_model
 from .store import Store
 from .telemetry import Trace, check_readback
 
@@ -25,10 +25,11 @@ def main():
     sub = p.add_subparsers(dest="command", required=True)
     canary = sub.add_parser("smoke-trace")
     canary.add_argument("--require-langwatch", action="store_true")
-    for name in ("smoke-model", "state", "reset"):
+    sub.add_parser("smoke-model").add_argument("--mode", choices=("live", "chatgpt"), default="live")
+    for name in ("state", "reset"):
         sub.add_parser(name)
     for name in ("unsafe", "safe"):
-        sub.add_parser(name).add_argument("--mode", choices=("live", "replay"), default="replay")
+        sub.add_parser(name).add_argument("--mode", choices=("live", "chatgpt", "replay"), default="replay")
     for name in ("inspect", "approve", "promote"):
         sub.add_parser(name).add_argument("proposal_id")
     sub.add_parser("set-review").add_argument("value", choices=("open", "cleared"))
@@ -45,13 +46,17 @@ def main():
         if len(a.id) != 32 or any(c not in "0123456789abcdef" for c in a.id):
             p.error("Provide a 32-character trace ID from a lab run.")
         data = json.loads((Path(a.traces) / (a.id + ".json")).read_text())
-        spans = data["resourceSpans"][0]["scopeSpans"][0]["spans"]
+        spans = [span for resource in data["resourceSpans"] for scope in resource["scopeSpans"]
+                 for span in scope["spans"]]
         return {"spans": [{"name": s["name"], **{item["key"]: item["value"]["stringValue"]
                  for item in s["attributes"] if item["key"].startswith(("gen_ai.tool.", "langwatch.span.output"))}}
                  for s in sorted(spans, key=lambda s: int(s["startTimeUnixNano"]))]}
     if a.command == "smoke-model":
-        if not smoke_model():
+        from .models import smoke_model
+        if not smoke_model(a.mode):
             raise RuntimeError("Model response was empty.")
+        if a.mode == "chatgpt":
+            return {"provider": "codex-chatgpt", "live_response_received": True}
         return {"model": os.environ["OPENAI_MODEL"], "live_response_received": True}
     Path(a.state).parent.mkdir(parents=True, exist_ok=True)
     store = Store(a.state, (solution if a.solution else policy).validate)
@@ -61,17 +66,17 @@ def main():
         return store.set_review(a.value)
     if a.command == "inspect":
         return store.proposal(a.proposal_id)
-    t = Trace(a.command, a.traces)
+    t = Trace(a.traces)
     try:
-        with t.span(t.label, {"command": a.command}, root=True) as root:
-            if a.command == "smoke-trace":
-                result = t.tool(store.state, "get_deal")
-            elif a.command in ("approve", "promote"):
+        with t.root(a.command) as root:
+            if a.command in ("approve", "promote"):
                 result = t.tool(getattr(store, a.command), "human_" + a.command,
                                 pid=a.proposal_id)
             else:
-                result = run(store, t, a.command == "safe", a.mode)
-            root["langwatch.span.output"] = {"type": "json", "value": result}
+                from .agent import run
+                t.instrument_adk()
+                result = asyncio.run(run(store, a.command, getattr(a, "mode", "replay")))
+            root.set_attribute("langwatch.span.output", json.dumps({"type": "json", "value": result}))
     except Exception:
         t.finish()
         raise

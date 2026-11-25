@@ -12,20 +12,42 @@ if [ ! -f .langwatch.env ]; then
   } > .langwatch.env
 fi
 [ -f .env ] || cp .env.example .env
-case "${1:-up}" in
-  pull) docker compose --profile lab pull ;;
-  up) docker compose up -d app workers ;;
-  *) printf '%s\n' 'Usage: ./setup.sh [pull|up]' >&2; exit 2 ;;
-esac
-if [ "${1:-up}" = up ]; then
-  printf '%s\n' 'Waiting for the local LangWatch UI…'
-  for n in $(seq 1 90); do
-    if curl -fsS --max-time 3 -o /dev/null http://localhost:5560/; then
-      printf '%s\n' 'Open http://localhost:5560 and follow README → Local LangWatch.'
-      exit 0
+mkdir -p .lab
+log=.lab/setup.log
+: > "$log"
+step() {
+  printf '%s\n' "$1"
+  shift
+  if ! "$@" >> "$log" 2>&1; then
+    tail -25 "$log" >&2
+    echo "Setup stopped. Full log: $log" >&2
+    exit 1
+  fi
+}
+
+wait_for_login() {
+  for attempt in $(seq 1 120); do
+    if curl -fsS --max-time 3 -o /dev/null "${WORKSHOP_URL:-http://localhost:5560}/api/health" &&
+       docker compose exec -T postgres psql -XqAt -U prisma -d mydb \
+         -c 'SELECT 1 FROM mydb."Grant", mydb."User" LIMIT 0' >/dev/null; then
+      return 0
     fi
     sleep 2
   done
-  printf '%s\n' 'LangWatch did not become reachable. Try: docker compose logs --tail=100 app workers' >&2
-  exit 1
-fi
+  echo 'LangWatch sign-in did not start. Inspect docker compose logs app workers.'
+  return 1
+}
+
+case "${1:-up}" in
+  pull)
+    step 'Downloading LangWatch images…' docker compose --profile lab pull --ignore-buildable
+    step 'Building the ADK lab…' docker compose build lab
+    ;;
+  up)
+    step 'Preparing the ADK lab…' docker compose build lab
+    step 'Starting LangWatch…' docker compose up -d app workers
+    step 'Waiting for sign-in to be ready…' wait_for_login
+    sh workshop/setup-account.sh
+    ;;
+  *) echo 'Usage: ./setup.sh [pull|up]' >&2; exit 2 ;;
+esac

@@ -1,61 +1,67 @@
+import base64
 import contextlib
 import json
 import os
 from pathlib import Path
-import secrets
 import time
 import urllib.error
 import urllib.request
 
-def attrs(values):
-    return [{"key": k, "value": {"stringValue": v if isinstance(v, str) else json.dumps(v)}}
-            for k, v in values.items()]
-
 class Trace:
-    def __init__(self, name, directory):
-        self.id = secrets.token_hex(16)
-        self.spans = []
-        self.root = None
+    def __init__(self, directory):
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+        self.provider = TracerProvider(resource=Resource.create({"service.name": "aica-agent-lab"}))
+        self.exporter = InMemorySpanExporter()
+        self.provider.add_span_processor(SimpleSpanProcessor(self.exporter))
+        self.tracer = self.provider.get_tracer("aica-agent-lab")
         self.directory = Path(directory)
-        self.label = f"{name}-{self.id[:8]}"
+
+    def instrument_adk(self):
+        import langwatch
+        from openinference.instrumentation.google_adk import GoogleADKInstrumentor
+
+        # One export for the offline file and the local project's checked OTLP request.
+        langwatch.setup(tracer_provider=self.provider, instrumentors=[GoogleADKInstrumentor()],
+                        skip_open_telemetry_setup=True)
 
     @contextlib.contextmanager
-    def span(self, name, input=None, root=False, kind="tool"):
-        sid = secrets.token_hex(8)
-        values = {"langwatch.span.type": "span" if root else kind}
-        if root:
-            self.root = sid
-        elif kind == "tool":
-            values["gen_ai.operation.name"] = "execute_tool"
-            values["gen_ai.tool.name"] = name
-        if input is not None:
-            if not root and kind == "tool":
-                values["gen_ai.tool.call.arguments"] = input
-            values["langwatch.span.input"] = {"type": "json", "value": input}
-        span = {"traceId": self.id, "spanId": sid, "name": name, "kind": 1,
-                "startTimeUnixNano": str(time.time_ns()), "status": {"code": 1}}
-        if not root:
-            span["parentSpanId"] = self.root
-        try:
-            yield values
-        except Exception:
-            span["status"] = {"code": 2, "message": "Lab step failed"}
-            raise
-        finally:
-            span["endTimeUnixNano"] = str(time.time_ns())
-            span["attributes"] = attrs(values)
-            self.spans.append(span)
+    def root(self, command):
+        with self.tracer.start_as_current_span(command) as span:
+            self.id = format(span.get_span_context().trace_id, "032x")
+            self.label = f"{command}-{self.id[:8]}"
+            span.update_name(self.label)
+            yield span
 
     def tool(self, fn, name, **kwargs):
-        with self.span(name, kwargs) as a:
+        with self.tracer.start_as_current_span(name) as span:
+            span.set_attribute("gen_ai.tool.name", name)
+            span.set_attribute("gen_ai.tool.call.arguments", json.dumps(kwargs))
             result = fn(**kwargs)
-            a["gen_ai.tool.call.result"] = result
-            a["langwatch.span.output"] = {"type": "json", "value": result}
+            span.set_attribute("gen_ai.tool.call.result", json.dumps(result))
             return result
 
     def finish(self, required=False):
-        data = {"resourceSpans": [{"resource": {"attributes": attrs({"service.name": "aica-agent-lab"})},
-                "scopeSpans": [{"scope": {"name": "aica-agent-lab"}, "spans": self.spans}]}]}
+        from google.protobuf.json_format import MessageToDict
+        from opentelemetry.exporter.otlp.proto.common.trace_encoder import encode_spans
+
+        data = MessageToDict(encode_spans(self.exporter.get_finished_spans()), use_integers_for_enums=True)
+        for resource in data["resourceSpans"]:
+            for scope in resource["scopeSpans"]:
+                for span in scope["spans"]:
+                    # OTLP JSON represents IDs as hex, unlike standard protobuf JSON.
+                    for field in ("traceId", "spanId", "parentSpanId"):
+                        if field in span:
+                            span[field] = base64.b64decode(span[field]).hex()
+                    attrs = {a["key"]: a["value"].get("stringValue") for a in span.get("attributes", [])}
+                    if attrs.get("tool.name") and attrs.get("output.value"):
+                        span["name"] = attrs["tool.name"]
+                        output = json.loads(attrs["output.value"])
+                        span["attributes"].append({"key": "gen_ai.tool.call.result", "value": {
+                            "stringValue": json.dumps(output["response"])}})
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / f"{self.id}.json"
         path.write_text(json.dumps(data, indent=2) + "\n")

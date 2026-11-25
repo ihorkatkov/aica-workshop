@@ -129,10 +129,15 @@ class Lab(unittest.TestCase):
             path, headers, body = reqs[0]
             self.assertEqual(path, "/api/otel/v1/traces")
             self.assertEqual(headers["X-Auth-Token"], "test-project")
-            spans = body["resourceSpans"][0]["scopeSpans"][0]["spans"]
+            spans = [span for scope in body["resourceSpans"][0]["scopeSpans"]
+                     for span in scope["spans"]]
             root = next(s for s in spans if "parentSpanId" not in s)
             tool = next(s for s in spans if s["name"] == "get_deal")
-            self.assertEqual(root["spanId"], tool["parentSpanId"])
+            agent = next(s for s in spans if s["name"] == "agent_run [pilot_coordinator]")
+            invocation = next(s for s in spans if s["name"] == "invocation [aica]")
+            self.assertEqual(tool["parentSpanId"], agent["spanId"])
+            self.assertEqual(agent["parentSpanId"], invocation["spanId"])
+            self.assertEqual(invocation["parentSpanId"], root["spanId"])
             self.assertEqual(tool["traceId"], out["trace_id"])
             self.assertNotIn("test-project", json.dumps(body))
             check = self.cli("verify-trace", out["trace_id"], env=env)
@@ -166,6 +171,20 @@ class Lab(unittest.TestCase):
             body = reqs[-1][2]
             self.assertEqual([t["function"]["name"] for t in body["tools"]], ["propose_action"])
             self.assertIn("REVIEW_NOT_CLEARED", body["messages"][-1]["content"])
+            call_id = body["messages"][-2]["tool_calls"][0]["id"]
+            self.assertTrue(call_id)
+            self.assertEqual(body["messages"][-1]["tool_call_id"], call_id)
+
+    def test_chatgpt_invalid_decision_leaves_state_unchanged(self):
+        binary = Path(self.tmp.name, "codex")
+        binary.write_text("#!/bin/sh\ncat >/dev/null\nprintf '%s' "
+                          """'{"action":"human_promote"}' >decision.json\n""")
+        binary.chmod(0o700)
+        before = self.cli("state")
+        error = self.cli("--solution", "safe", "--mode", "chatgpt", success=False,
+                         env={"PATH": self.tmp.name + os.pathsep + os.environ["PATH"]})
+        self.assertIn("Unexpected tool or action", error)
+        self.assertEqual(self.cli("state"), before)
 
     def test_unsupported_tool_fails_closed(self):
         def reply(_):

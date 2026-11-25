@@ -59,7 +59,7 @@ services:
       retries: 30
       start_period: 15s
   lab:
-    image: python:3.12-slim
+    build: .
     profiles: ["lab"]
     working_dir: /work
     volumes: [".:/work"]
