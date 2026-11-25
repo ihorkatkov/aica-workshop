@@ -38,29 +38,6 @@ def test_console_requires_own_session_and_same_origin(tmp_path):
         assert c.get("/ui/state").status_code == 401
 
 
-def test_starter_has_no_approval_routes_or_controls(tmp_path):
-    with TestClient(create_app(tmp_path / "crm.db")) as c:
-        page = c.get("/")
-        for text in (
-            "Pending requests",
-            "data-action",
-            "panel-proposals",
-            "Approve",
-            "awaiting action",
-        ):
-            assert text not in page.text
-        token = re.search('name="csrf-token" content="([^"]+)"', page.text)[1]
-        browser = {"Origin": "http://testserver", "X-CSRF-Token": token}
-        for operation in ("approve", "promote"):
-            assert (
-                c.post(
-                    f"/ui/proposals/anything/{operation}", headers=browser
-                ).status_code
-                == 404
-            )
-        assert "proposals" not in c.get("/ui/state").json()
-
-
 def test_d104_actions_are_visible_without_approval(tmp_path):
     with TestClient(create_app(tmp_path / "crm.db")) as c:
         c.get("/")
@@ -77,6 +54,7 @@ def test_d104_actions_are_visible_without_approval(tmp_path):
         assert deal()["stage"] == "pilot_requested"
         assert deal()["security_review"] == "open"
         assert deal()["kickoffs"] == deal()["review_requests"] == 0
+        c.post(base + "/deals/D-104/review", headers=human, json={"status": "cleared"})
         for expected_count in (1, 2):
             result = c.post(
                 base + "/deals/D-104/write",
@@ -86,7 +64,7 @@ def test_d104_actions_are_visible_without_approval(tmp_path):
             assert result.status_code == 200
             assert deal()["kickoffs"] == expected_count
             assert deal()["stage"] == "kickoff_scheduled"
-            assert deal()["security_review"] == "open"
+            assert deal()["security_review"] == "cleared"
         c.post(
             base + "/deals/D-104/write",
             headers=agent,
@@ -102,6 +80,7 @@ def test_d104_actions_are_visible_without_approval(tmp_path):
             for e in c.get("/ui/state").json()["audit"]
             if e["detail"].get("deal_id") == "D-104"
         ]
+        assert events.pop(0)["event"] == "review_changed"
         assert [e["event"] for e in events] == ["deal_updated"] * 3 + ["review_changed"]
         assert events[0]["detail"]["after"]["kickoffs"] == 1
         assert events[1]["detail"]["after"]["kickoffs"] == 2
@@ -128,13 +107,6 @@ def test_direct_browser_actions_record_human_and_require_csrf(tmp_path):
         result = c.post("/ui/deals/D-104/write", headers=headers, json=body).json()
         assert result["record"]["review_requests"] == 1
         assert result["record"]["security_review"] == "open"
-        result = c.post(
-            "/ui/deals/D-104/write",
-            headers=headers,
-            json={"action": "schedule_kickoff"},
-        ).json()
-        assert result["record"]["stage"] == "kickoff_scheduled"
-        assert result["record"]["kickoffs"] == 1
         review = c.post(
             "/ui/deals/D-104/review",
             headers=headers,
@@ -142,6 +114,13 @@ def test_direct_browser_actions_record_human_and_require_csrf(tmp_path):
         ).json()
         assert review["security_review"] == "cleared"
         assert review["review_valid_until"] == "2027-03-31"
+        result = c.post(
+            "/ui/deals/D-104/write",
+            headers=headers,
+            json={"action": "schedule_kickoff"},
+        ).json()
+        assert result["record"]["stage"] == "kickoff_scheduled"
+        assert result["record"]["kickoffs"] == 1
         events = [
             e
             for e in c.get("/ui/state").json()["audit"]
@@ -149,8 +128,8 @@ def test_direct_browser_actions_record_human_and_require_csrf(tmp_path):
         ]
         assert len(events) == 3
         assert {e["detail"]["actor"] for e in events} == {"human"}
-        assert events[-1]["detail"]["valid_until"] == "2027-03-31"
-        assert events[-1]["detail"]["previous_status"] == "open"
+        assert events[1]["detail"]["valid_until"] == "2027-03-31"
+        assert events[1]["detail"]["previous_status"] == "open"
         assert (
             c.post(
                 "/ui/deals/D-104/review",

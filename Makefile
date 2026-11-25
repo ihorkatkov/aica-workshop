@@ -11,22 +11,18 @@ LAB = docker compose run --rm -T lab
 TEST = docker compose run --rm -T --entrypoint python lab -m pytest
 endif
 
-.PHONY: help setup pull web ui crm preflight reset run state set-review check-policy test scenarios verify down
+.PHONY: help setup pull web ui crm preflight reset run state set-review check-policy check-kickoff test scenarios verify down
 help:
 	@printf '%s\n' 'make setup              Start the workshop and check model access' \
 	 'make ui                 Start the CRM' \
 	 'make web                Start ADK chat' \
 	 'make reset              Restore CRM data (keeps your code)' \
-	 'make scenarios review   Test review handling' \
-	 'make scenarios identity Test company/site clarification' \
-	 'make scenarios retry    Test repeated requests' \
-	 'make scenarios batch    Test all 30 deals' \
-	 'make scenarios d104     Test the kickoff gate' \
-	 'make scenarios list AGENTS=all     List case/client combinations (no model calls)' \
-	 'make scenarios retry AGENTS=claude,codex   Run one group on selected clients' \
-	 'make scenarios review AGENTS=codex CASE=D-104   Filter cases by pytest keyword' \
-	 'make scenarios all AGENTS=all      Run every case on ADK, Claude Code and Codex' \
-	 'Defaults: review group, AGENTS=adk. For native runs: make scenario-env and sign into each selected CLI.' \
+	 'make scenarios kickoff  Main challenge: enforce security clearance' \
+	 'make scenarios stage    Stretch challenge: owner reviews stage changes' \
+	 'make scenarios list AGENTS=all     List challenges and clients' \
+	 'make scenarios all AGENTS=all      Run three cases on ADK, Claude Code and Codex' \
+	 'Defaults: kickoff, AGENTS=adk. Native clients require make scenario-env and CLI sign-in.' \
+	 'make check-kickoff      Probe the CRM write boundary (no model calls)' \
 	 'make check-policy       Check your server policy' \
 	 'make test               Run infrastructure tests (no model calls)' \
 	 'HOST=1 uses a prepared Python environment'
@@ -57,6 +53,8 @@ run:
 	@$(LAB) --workspace $(WORKSPACE) run "$$PROMPT"
 set-review:
 	@$(LAB) --workspace $(WORKSPACE) set-review "$$DEAL" "$$VALUE"
+check-kickoff:
+	@$(TEST) tests/kickoff_probe.py -q
 check-policy:
 ifeq ($(HOST),1)
 	@$(PYTHON) -m tests.check_policy
@@ -75,11 +73,11 @@ scenario-env:
 AGENTS ?= adk
 CASE ?=
 export AGENTS CASE
-SCENARIO_GROUPS := review identity retry batch d104 all list help
+SCENARIO_GROUPS := kickoff stage all list help
 ifneq ($(filter scenarios,$(MAKECMDGOALS)),)
 SCENARIO_ARGS := $(filter-out scenarios,$(MAKECMDGOALS))
 ifneq ($(filter-out $(SCENARIO_GROUPS),$(SCENARIO_ARGS)),)
-$(error Use make scenarios [review|identity|retry|batch|d104|all|list|help])
+$(error Use make scenarios [kickoff|stage|all|list|help])
 endif
 ifneq ($(word 2,$(SCENARIO_ARGS)),)
 $(error Choose one scenario group at a time)
@@ -88,7 +86,7 @@ endif
 $(filter-out help,$(SCENARIO_GROUPS)):
 	@:
 endif
-SCENARIO_GROUP := $(if $(SCENARIO_ARGS),$(SCENARIO_ARGS),review)
+SCENARIO_GROUP := $(if $(SCENARIO_ARGS),$(SCENARIO_ARGS),kickoff)
 SCENARIO_PATH := $(if $(filter all,$(SCENARIO_GROUP)),scenarios,scenarios/test_$(SCENARIO_GROUP).py)
 SCENARIO_TEST := $(if $(or $(filter list,$(SCENARIO_GROUP)),$(filter adk,$(AGENTS))),$(TEST),$(PYTHON) -m pytest)
 ifneq ($(filter list,$(SCENARIO_GROUP)),)

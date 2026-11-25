@@ -38,66 +38,24 @@ In **Customer pilots**, click **Refresh**, search for D-104, and select the deal
 
 Run `make reset` to restore the 30 deals, then refresh the CRM. Your code stays unchanged. Start a new agent chat after a reset.
 
-### 2. Test the starting point
+### 2. Main challenge · Enforce the kickoff rule
+
+Run `make scenarios kickoff` for two independent cases (open review and valid clearance). Run `make check-kickoff` for the direct CRM enforcement probe. Compare the agent’s reply with the persisted CRM state. The starter permits an unsafe kickoff. Your goal is to enforce a current, cleared security review at the CRM write boundary and give sales useful feedback when kickoff is blocked. When security clears D-104, the agent should be able to schedule kickoff without owner approval.
+
+Use the CRM’s **Details** and **Activity** views to demonstrate what changed. The policy exercise lives in `crm/policy.py`; `make check-policy` checks the business rule. Restart the agent chat after changing its tools or instructions.
+
+### 3. Stretch challenge · Review stage proposals
+
+Once kickoff works, run `make scenarios stage`. A four-project pilot batch tests whether the agent can propose stage changes through MCP and whether the account owner can see, approve, edit or reject each change in the CRM. Participants build this workflow. The starter desk provides inspection and direct human actions. See [AGENTS.md](AGENTS.md) for the outcomes to demonstrate.
+
+All three scenarios support ADK, Claude Code and Codex. The default is kickoff on ADK. For native clients, prepare host Python 3.12 with `make scenario-env` and sign into each selected CLI.
 
 ```sh
-make scenarios review
+make scenarios list AGENTS=all       # show the three cases across three clients
+make scenarios kickoff AGENTS=codex  # main challenge on Codex
+make scenarios stage AGENTS=claude   # stretch challenge on Claude Code
+make scenarios all AGENTS=all        # all three cases on all three clients
 ```
-
-This uses a real simulated user, your real agent, and an independent model judge. It also checks persisted CRM state. Failures are expected before you improve the agent. Read the failure and trace: an unavailable model or simulator error is different from a bad agent decision.
-
-### 3. Improve that same agent and server
-
-| Edit | What to change |
-| --- | --- |
-| `agents/workshop/prompt.md` | Tell the agent what evidence matters, when to clarify, and how to use rejection feedback. |
-| `lab/tools.py` | Implement the agent interaction and any approval mechanism your design needs. |
-| `crm/policy.py` and `crm/store.py` | Implement and enforce your business rules at the write boundary. The starter validator allows all actions. |
-
-The starter has no proposal, approval, or promotion API. Its agent writes directly. Participants own the approval interaction, its persisted evidence, and enforcement. A useful guardrail helps the agent make progress through a permitted alternative.
-
-```sh
-make check-policy
-make scenarios review
-```
-
-The policy check deliberately fails until you implement the exercise. The CRM reloads Python changes. After changing agent files, restart chat with `docker compose restart web` and start a new session so the new instructions and tools take effect. You are always running the same `workshop` agent.
-
-### 4. Verify the outcome in the CRM
-
-In **Customer pilots**, refresh and open D-104. **Details** shows its current stage, security review and validity, kickoff count, and notes. **Activity** shows recorded business changes, newest first.
-
-The starter CRM supports direct human actions as well as inspection. Use **Request security review** to record a request, **Update review status** to save the review result (and validity date when cleared), or **Schedule kickoff** to record kickoff. Each successful action refreshes the deal and opens Activity, attributed to **Human**. Agent API writes are attributed to **Agent**. It has no Pending requests panel, approval buttons, or approve-then-execute workflow. A review request sets the security review to Open and clears its previous validity date. Save the review result separately with Update review status. Kickoff actions update the stage and kickoff count. These are synthetic records, not real emails or calendar invitations.
-
-Implement any human approval mechanism in your agent/application and enforce it at the write boundary. Verify your implementation through the resulting CRM state and Activity; do not rely only on what the agent says.
-
-**Finish line:** show a real trace, the rules you implemented, a useful next step, and persisted evidence of which actions were actually allowed.
-
-## Go further
-
-The scenario commands work on your current agent and code:
-
-```sh
-make scenarios review       # open, missing, expired and cleared reviews
-make scenarios identity     # similar company names and multiple sites
-make scenarios retry        # repeated requests without duplicate activity
-make scenarios batch        # all 30 deals
-make scenarios d104        # D-104 with a persisted-state check
-make scenarios all          # all nine cases on ADK
-
-make scenarios list AGENTS=all                     # list all 27 combinations, no model calls
-make scenarios review AGENTS=codex CASE=D-104       # one review case on one client
-make scenarios retry AGENTS=claude,codex            # one case on two clients
-make scenarios all AGENTS=all                       # all nine cases on all three clients
-```
-
-`make scenarios help` shows the selectors. The defaults are the review group and ADK. Use `CASE` with a pytest keyword or expression to narrow a group. For native runs, prepare host Python 3.12 once with `make scenario-env` and sign into the selected CLIs. Each case/client gets fresh CRM data and a new conversation. Follow-up turns resume that conversation. Every run prints an evidence directory with the ordered MCP calls, the saved CRM state, and the LangWatch verdict.
-
-Try “Schedule the Northstar pilot.” Does the agent ask which company and site? For a batch, ask it to review all pilot-requested deals, prepare kickoff only for valid reviews, request review updates otherwise, and skip activities already recorded.
-
-If you implement approvals, test what happens when the record changes before execution. `make set-review DEAL=D-101 VALUE=open` changes the CRM review; refresh to inspect the result. The starter does not implement this approval lifecycle for you.
-
-The model judge checks conversational quality; Python assertions check the actual records and proposals. Refusing everything does not pass. Repeat matched cases before claiming reliability. One successful run is one observation.
 
 ## Useful commands
 
@@ -111,7 +69,7 @@ make test          # deterministic infrastructure checks; no model calls
 make down          # stop services, preserve data
 ```
 
-The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns CRM records and business activity. The agent never opens the database. Approval storage and enforcement are participant work. The existing advanced scenarios express the earlier proposal-based target and expect participant-provided `proposals` evidence in state; that workflow is no longer supplied by the starter.
+The CRM and chat use standard FastAPI and Google ADK. `fixtures/crm.json` contains 10 companies, 60 contacts, and 30 deals with a fixed business date. `scenarios/` contains separate LangWatch Scenario files. The server owns CRM records and business activity. The agent never opens the database. Approval storage and enforcement are participant work.
 
 The CRM is a **local human console on a trusted laptop**. Its browser session is separate from the agent token, and mutations require same-origin requests with a CSRF token. It is not a production identity system. Do not expose the local services publicly.
 
@@ -127,7 +85,7 @@ python3.12 -m venv .venv
 make crm HOST=1             # terminal 1: CRM and inspection UI
 make web HOST=1             # terminal 2: agent chat
 make preflight HOST=1
-make scenarios review HOST=1
+make scenarios kickoff HOST=1
 make check-policy HOST=1
 ```
 

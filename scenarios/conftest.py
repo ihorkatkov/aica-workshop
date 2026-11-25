@@ -56,67 +56,75 @@ def pytest_generate_tests(metafunc):
 
 
 class CRMJudge(scenario.JudgeAgent):
-    def __init__(self, *, check_saved, **kwargs):
+    def __init__(self, *, saved_checks, **kwargs):
         super().__init__(**kwargs)
-        self.check_saved = check_saved
+        self.saved_checks = saved_checks
 
     async def call(self, input):
         verdict = await super().call(input)
         if not isinstance(verdict, ScenarioResult):
             return verdict
-        criterion = "Persisted CRM state matches the expected outcome"
-        try:
-            self.check_saved()
-        except AssertionError as error:
-            reason = (str(error) or "CRM state check failed").splitlines()[0][:600]
-            verdict.success = False
-            verdict.failed_criteria.append(criterion)
-            verdict.reasoning = (
-                f"{reason}. Conversation judge: {verdict.reasoning or ''}"
+        for criterion, check in self.saved_checks.items():
+            try:
+                check()
+            except AssertionError as error:
+                reason = (str(error) or "CRM state check failed").splitlines()[0][:600]
+                verdict.success = False
+                verdict.failed_criteria.append(criterion)
+                verdict.reasoning = f"{verdict.reasoning or ''} {criterion}: {reason}"
+                status = "failed"
+            else:
+                reason = "Verified through an independent CRM readback."
+                status = "passed"
+                verdict.passed_criteria.append(criterion)
+            verdict.criteria.append(
+                CriterionResult(
+                    criterion=criterion,
+                    requirement=criterion,
+                    status=status,
+                    reasoning=reason,
+                )
             )
-            status = "failed"
-        else:
-            reason = "Verified through an independent CRM readback."
-            status = "passed"
-            verdict.passed_criteria.append(criterion)
-        verdict.criteria.append(
-            CriterionResult(
-                criterion=criterion,
-                requirement=criterion,
-                status=status,
-                reasoning=reason,
-            )
-        )
         return verdict
 
 
 @pytest.fixture
-def run_case(world, request):
-    adapter, state, before = world
+def native_models():
+    """Scenario modules can override the native CLI models used for their runs."""
+    return {}
+
+
+@pytest.fixture
+def run_case(world, request, native_models):
+    adapter, state, _ = world
 
     async def run(**kwargs):
         client = request.node.callspec.params["world"]
         title = kwargs.pop("name")
-        result = await scenario.run(
-            name=f"{title} [{client}]",
-            metadata={
-                "case": request.node.nodeid,
-                "workspace": before["workspace"],
-                "client": client,
-            },
-            **kwargs,
-        )
-        folder = adapter.evidence_dir
-        evidence = {
-            "workspace": before["workspace"],
-            "before": before,
-            "after": state(),
+        before = state()  # The scenario's fixture has finished arranging the CRM.
+        metadata = {
             "case": request.node.nodeid,
+            "workspace": before["workspace"],
             "client": client,
-            "scenario": result.model_dump(mode="json"),
         }
-        (folder / "result.json").write_text(json.dumps(evidence, indent=2))
-        flush()
+        if client in native_models:
+            metadata["requested_model"] = native_models[client]
+        evidence = {**metadata, "before": before}
+        try:
+            result = await scenario.run(
+                name=f"{title} [{client}]", metadata=metadata, **kwargs
+            )
+            evidence["scenario"] = result.model_dump(mode="json")
+        except Exception as error:
+            evidence["error"] = {"type": type(error).__name__, "message": str(error)}
+            raise
+        finally:
+            evidence["after"] = state()
+            (adapter.evidence_dir / "result.json").write_text(
+                json.dumps(evidence, indent=2)
+            )
+            flush()
+
         verify(evidence["scenario"]["messages"][-1]["trace_id"])
         return result
 
@@ -129,7 +137,7 @@ def judge():
 
 
 @pytest_asyncio.fixture
-async def world(request, monkeypatch, tmp_path):
+async def world(request, monkeypatch, tmp_path, native_models):
     require_model()
     setup()
     scenario.configure(
@@ -139,9 +147,11 @@ async def world(request, monkeypatch, tmp_path):
         ),
         max_turns=6,
     )
-    workspace = "scenario-" + uuid.uuid4().hex
+    run_id = uuid.uuid4().hex
+    # The human desk uses workshop. Each scenario has its own server and SQLite file.
+    workspace = "workshop"
     client = request.param
-    folder = ROOT / ".lab/shared-mcp" / f"{client}-{workspace}"
+    folder = ROOT / ".lab/shared-mcp" / f"{client}-{run_id}"
     folder.mkdir(parents=True)
     async with crm_server(folder, workspace) as url:
         monkeypatch.setenv("CRM_URL", url)
@@ -160,7 +170,7 @@ async def world(request, monkeypatch, tmp_path):
                 )
             ]
         else:
-            adapter = NativeClient(client, mcp_url, tmp_path)
+            adapter = NativeClient(client, mcp_url, tmp_path, model=native_models.get(client))
         try:
             yield RecordedClient(adapter, folder), state, before
         finally:

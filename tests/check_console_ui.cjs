@@ -17,7 +17,6 @@ let detail = render();
 assert.match(detail, /Customer &lt;one&gt;/);
 assert.match(detail, /Pilot requested/);
 assert.match(detail, /Phone confirmation/);
-assert.doesNotMatch(detail, /[Pp]roposal|[Aa]pprov|[Pp]romot|duplicate|guardrail/);
 state.audit.push({id:1,event:'unsafe_write',detail:{deal_id:'D-101',action:'schedule_kickoff'}});
 detail=render();
 assert.match(detail, /Kickoff scheduled/);
@@ -27,7 +26,6 @@ element('search').value='unmatched';
 assert.match(render(), /No deal selected/);
 element('search').value='';element('filter').value='cleared';
 assert.match(render(), /No deal selected/);
-assert.doesNotMatch(html, /Try before approval|Verify no duplicate|Exercise controls|You decide what goes live/);
 console.log('Console rendering checks passed: baseline, activity, search, filter, escaping.');
 
 // Sorting must preserve numerical order, and record navigation must preserve list inputs.
@@ -62,10 +60,7 @@ state.audit.push({id:3,event:'deal_updated',detail:{deal_id:'D-101',action:'requ
 detail=render();
 assert.match(detail,/Security review requested/);
 assert.match(detail,/Review requests: 1/);
-assert.doesNotMatch(detail,/Pending requests|awaiting action|data-action|proposal|Approve|request created/);
-assert.doesNotMatch(element('deals').innerHTML,/awaiting action/);
-assert.doesNotMatch(html,/Pending requests|data-action|function proposal|Approve|\/proposals\//);
-console.log('Starter UI ignores legacy requests and shows business outcomes.');
+console.log('Activity shows the recorded review request.');
 
 assert.match(detail,/Request security review/);
 assert.match(detail,/Update review status/);

@@ -17,9 +17,10 @@ INSTRUCTIONS = (ROOT / "agents/workshop/prompt.md").read_text()
 
 
 class NativeClient(scenario.AgentAdapter):
-    def __init__(self, name, url, cwd):
+    def __init__(self, name, url, cwd, *, model=None):
         self.name, self.url, self.cwd = name, url, cwd
 
+        self.model = model
         self.session_id = None
         self.env = {
             k: os.environ[k]
@@ -51,10 +52,12 @@ class NativeClient(scenario.AgentAdapter):
 
     async def call(self, input):
         prompt = input.last_new_user_message_str()
+        model_args = ["--model", self.model] if self.model else []
         if self.name == "claude":
             args = [
                 "claude",
                 "-p",
+                *model_args,
                 "--tools",
                 "",
                 "--allowedTools",
@@ -73,6 +76,7 @@ class NativeClient(scenario.AgentAdapter):
             args = [
                 "codex",
                 "exec",
+                *model_args,
                 "--json",
                 "--skip-git-repo-check",
                 "-s",
