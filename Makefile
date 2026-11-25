@@ -21,7 +21,12 @@ help:
 	 'make scenarios identity Test company/site clarification' \
 	 'make scenarios retry    Test repeated requests' \
 	 'make scenarios batch    Test all 30 deals' \
-	 'make scenarios all      Run all scenarios' \
+	 'make scenarios d104     Test the kickoff gate' \
+	 'make scenarios list AGENTS=all     List case/client combinations (no model calls)' \
+	 'make scenarios retry AGENTS=claude,codex   Run one group on selected clients' \
+	 'make scenarios review AGENTS=codex CASE=D-104   Filter cases by pytest keyword' \
+	 'make scenarios all AGENTS=all      Run every case on ADK, Claude Code and Codex' \
+	 'Defaults: review group, AGENTS=adk. For native runs: make scenario-env and sign into each selected CLI.' \
 	 'make check-policy       Check your server policy' \
 	 'make test               Run infrastructure tests (no model calls)' \
 	 'HOST=1 uses a prepared Python environment'
@@ -61,24 +66,40 @@ endif
 test:
 	@$(TEST) tests -q
 
+.PHONY: scenario-env
+scenario-env:
+	@python3.12 -m venv .venv
+	@.venv/bin/python -m pip install -r requirements.txt
+
 # Treat the word after "scenarios" as a suite name, not a separate Make action.
-SCENARIO_GROUPS := review identity retry batch all
+AGENTS ?= adk
+CASE ?=
+export AGENTS CASE
+SCENARIO_GROUPS := review identity retry batch d104 all list help
 ifneq ($(filter scenarios,$(MAKECMDGOALS)),)
 SCENARIO_ARGS := $(filter-out scenarios,$(MAKECMDGOALS))
 ifneq ($(filter-out $(SCENARIO_GROUPS),$(SCENARIO_ARGS)),)
-$(error Use make scenarios [review|identity|retry|batch|all])
+$(error Use make scenarios [review|identity|retry|batch|d104|all|list|help])
 endif
 ifneq ($(word 2,$(SCENARIO_ARGS)),)
 $(error Choose one scenario group at a time)
 endif
 .PHONY: $(SCENARIO_GROUPS)
-$(SCENARIO_GROUPS):
+$(filter-out help,$(SCENARIO_GROUPS)):
 	@:
 endif
 SCENARIO_GROUP := $(if $(SCENARIO_ARGS),$(SCENARIO_ARGS),review)
 SCENARIO_PATH := $(if $(filter all,$(SCENARIO_GROUP)),scenarios,scenarios/test_$(SCENARIO_GROUP).py)
+SCENARIO_TEST := $(if $(or $(filter list,$(SCENARIO_GROUP)),$(filter adk,$(AGENTS))),$(TEST),$(PYTHON) -m pytest)
+ifneq ($(filter list,$(SCENARIO_GROUP)),)
+SCENARIO_PATH := scenarios
+endif
 scenarios:
-	@$(TEST) $(SCENARIO_PATH) -v -s
+ifeq ($(SCENARIO_GROUP),help)
+	@:
+else
+	@$(SCENARIO_TEST) $(SCENARIO_PATH) --agents "$$AGENTS" -k "$$CASE" $(if $(filter list,$(SCENARIO_GROUP)),--collect-only -q,-v -s)
+endif
 verify:
 	@$(LAB) smoke-trace
 down:

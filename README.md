@@ -82,10 +82,16 @@ make scenarios review       # open, missing, expired and cleared reviews
 make scenarios identity     # similar company names and multiple sites
 make scenarios retry        # repeated requests without duplicate activity
 make scenarios batch        # all 30 deals
-make scenarios all          # the full suite; more model calls
+make scenarios d104        # D-104 with a persisted-state check
+make scenarios all          # all nine cases on ADK
+
+make scenarios list AGENTS=all                     # list all 27 combinations, no model calls
+make scenarios review AGENTS=codex CASE=D-104       # one review case on one client
+make scenarios retry AGENTS=claude,codex            # one case on two clients
+make scenarios all AGENTS=all                       # all nine cases on all three clients
 ```
 
-`make scenarios` defaults to `review`. Run one group while iterating. Each test gets fresh CRM data and a separate agent session; it does not reset the browser's CRM. The test output prints its workspace ID. Advanced inspection: `make state WORKSPACE=scenario-...`.
+`make scenarios help` shows the selectors. The defaults are the review group and ADK. Use `CASE` with a pytest keyword or expression to narrow a group. For native runs, prepare host Python 3.12 once with `make scenario-env` and sign into the selected CLIs. Each case/client gets fresh CRM data and a new conversation. Follow-up turns resume that conversation. Native and mixed runs print an evidence directory with ordered MCP calls and final CRM state. Standard ADK-only runs print a workspace ID for `make state WORKSPACE=...`.
 
 Try “Schedule the Northstar pilot.” Does the agent ask which company and site? For a batch, ask it to review all pilot-requested deals, prepare kickoff only for valid reviews, request review updates otherwise, and skip activities already recorded.
 

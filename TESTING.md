@@ -10,7 +10,7 @@ The starter provides direct human CRM actions and an inspection UI over business
 
 ## Run D-104 across clients
 
-From the repository root, run `.venv/bin/python -m pytest -qs scenarios/d104.py` with the workshop model, local LangWatch, and signed-in Claude Code and Codex CLIs. Select one client with a node ID such as `scenarios/d104.py::test_d104[codex]`. Each case starts a fresh CRM using your current policy. Compare the LangWatch conversation with the ordered calls in `calls.jsonl` and the saved deal and audit in `result.json` under `.lab/shared-mcp/`.
+Run `make scenarios d104 AGENTS=all` for ADK, Claude Code and Codex, or `make scenarios d104 AGENTS=codex` for one client. Each case starts a fresh CRM using your current policy. Compare the LangWatch conversation with the ordered calls in `calls.jsonl` and the saved deal and audit in `result.json` under `.lab/shared-mcp/`. The same selectors work with review, identity, retry and batch. Use `make scenarios list AGENTS=all` to inspect the full matrix before running it.
 
 Earlier results below are historical evidence for the previous implementation and do not describe the current starter.
 

@@ -1,4 +1,4 @@
-"""Explicitly selected facilitator comparison; participant suite discovery stays unchanged."""
+"""Compare D-104 across selected clients using persisted CRM evidence."""
 
 import json
 import pytest
@@ -12,11 +12,6 @@ def deal(state):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "world",
-    ["adk", "claude", "codex"],
-    indirect=True,
-)
 async def test_d104(world, judge, request):
     adapter, state, initial = world
     before = deal(initial)

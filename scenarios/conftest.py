@@ -27,6 +27,28 @@ class ADKAdapter(scenario.AgentAdapter):
         return result["agent_said"]
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--agents",
+        default="adk",
+        help="Comma-separated scenario clients: adk,claude,codex (or all)",
+    )
+
+
+def pytest_generate_tests(metafunc):
+    if "world" not in metafunc.fixturenames:
+        return
+    selected = metafunc.config.getoption("--agents")
+    clients = ["adk", "claude", "codex"] if selected == "all" else selected.split(",")
+    if any(c not in {"adk", "claude", "codex"} for c in clients) or len(
+        set(clients)
+    ) != len(clients):
+        raise pytest.UsageError(
+            "--agents expects unique names from adk,claude,codex or all"
+        )
+    metafunc.parametrize("world", clients, indirect=True)
+
+
 @pytest.fixture
 def judge():
     return partial(
@@ -46,16 +68,20 @@ async def world(request, monkeypatch, tmp_path):
         max_turns=6,
     )
     workspace = "scenario-" + uuid.uuid4().hex
-    client = getattr(request, "param", None)
+    client = request.param
+    use_mcp = (
+        client != "adk"
+        or request.module.__name__.endswith("test_d104")
+        or "," in request.config.getoption("--agents")
+        or request.config.getoption("--agents") == "all"
+    )
     async with AsyncExitStack() as resources:
-        if client:
+        if use_mcp:
             folder = ROOT / ".lab/shared-mcp" / f"{client}-{workspace}"
             folder.mkdir(parents=True)
             from scenarios.mcp_clients import crm_server, RecordedClient
 
-            url = await resources.enter_async_context(
-                crm_server(folder, workspace)
-            )
+            url = await resources.enter_async_context(crm_server(folder, workspace))
             monkeypatch.setenv("CRM_URL", url)
 
         crm_request(workspace, "POST", "reset", human=True)
@@ -64,9 +90,9 @@ async def world(request, monkeypatch, tmp_path):
             return crm_request(workspace, "GET", "state", human=True)
 
         before = state()
-        if not client or client == "adk":
+        if client == "adk":
             adapter = ADKAdapter(workspace)
-            if client:
+            if use_mcp:
                 from google.adk.tools.mcp_tool.mcp_toolset import (
                     McpToolset,
                     StreamableHTTPConnectionParams,
@@ -86,8 +112,13 @@ async def world(request, monkeypatch, tmp_path):
                 client, url + f"/workspaces/{workspace}/mcp/", tmp_path
             )
         try:
-            yield RecordedClient(adapter, folder) if client else adapter, state, before
+            yield RecordedClient(adapter, folder) if use_mcp else adapter, state, before
         finally:
             if isinstance(adapter, ADKAdapter):
                 await adapter.conversation.close()
+            if use_mcp:
+                import json
+
+                (folder / "state.json").write_text(json.dumps(state(), indent=2))
+                print("CRM evidence directory:", folder)
             print("CRM evidence workspace:", workspace)

@@ -1,4 +1,4 @@
-"""Native CLI adapters for the one-turn kickoff comparison."""
+"""Native CLI adapters for the workshop scenarios."""
 
 import asyncio
 import json
@@ -18,9 +18,8 @@ class NativeClient(scenario.AgentAdapter):
     def __init__(self, name, url, cwd):
         self.name, self.url, self.cwd = name, url, cwd
 
-    async def call(self, input):
-        prompt = input.last_new_user_message_str()
-        env = {
+        self.session_id = None
+        self.env = {
             k: os.environ[k]
             for k in ("PATH", "HOME", "USER", "TMPDIR", "LANG")
             if k in os.environ
@@ -34,6 +33,20 @@ class NativeClient(scenario.AgentAdapter):
                 .read_text()
                 .replace("http://127.0.0.1:8001/workspaces/workshop/mcp/", self.url)
             )
+        if name == "codex":
+            home = self.cwd / "codex"
+            home.mkdir()
+            (home / "auth.json").symlink_to(
+                Path(os.getenv("CODEX_HOME", Path.home() / ".codex")) / "auth.json"
+            )
+            self.env["CODEX_HOME"] = str(home)
+            (home / "config.toml").write_text(
+                f'[projects.{json.dumps(str(self.cwd.resolve()))}]\ntrust_level = "trusted"\n'
+            )
+            subprocess.run(["git", "init", "-q"], cwd=self.cwd, check=True)
+
+    async def call(self, input):
+        prompt = input.last_new_user_message_str()
         if self.name == "claude":
             args = [
                 "claude",
@@ -42,28 +55,20 @@ class NativeClient(scenario.AgentAdapter):
                 "",
                 "--allowedTools",
                 "mcp__crm__*",
-                "--no-session-persistence",
+                "--output-format",
+                "json",
+                *(["--resume", self.session_id] if self.session_id else []),
                 "--append-system-prompt",
                 INSTRUCTIONS,
                 "--",
                 prompt,
             ]
         else:
-            home = self.cwd / "codex"
-            home.mkdir()
-            (home / "auth.json").symlink_to(
-                Path(os.getenv("CODEX_HOME", Path.home() / ".codex")) / "auth.json"
-            )
-            env["CODEX_HOME"] = str(home)
-            (home / "config.toml").write_text(
-                f'[projects.{json.dumps(str(self.cwd.resolve()))}]\ntrust_level = "trusted"\n'
-            )
-            subprocess.run(["git", "init", "-q"], cwd=self.cwd, check=True)
             reply = self.cwd / "reply.txt"
             args = [
                 "codex",
                 "exec",
-                "--ephemeral",
+                "--json",
                 "--skip-git-repo-check",
                 "-s",
                 "read-only",
@@ -79,6 +84,7 @@ class NativeClient(scenario.AgentAdapter):
                 'mcp_servers.crm.tools.search_deals.approval_mode="approve"',
                 "-c",
                 'mcp_servers.crm.tools.write_deal.approval_mode="approve"',
+                *(["resume", self.session_id] if self.session_id else []),
                 "-o",
                 str(reply),
                 prompt,
@@ -87,14 +93,37 @@ class NativeClient(scenario.AgentAdapter):
             subprocess.run,
             args,
             cwd=self.cwd,
-            env=env,
+            env=self.env,
             capture_output=True,
             text=True,
             timeout=180,
         )
         if result.returncode:
             raise RuntimeError(result.stderr[-1200:] or result.stdout[-1200:])
-        return result.stdout.strip() if self.name == "claude" else reply.read_text()
+        if self.name == "claude":
+            turn = json.loads(result.stdout)
+            if turn.get("is_error"):
+                raise RuntimeError(turn["result"])
+            session_id = turn["session_id"]
+            answer = turn["result"]
+        else:
+            events = [
+                json.loads(line) for line in result.stdout.splitlines() if line.strip()
+            ]
+            if not any(event["type"] == "turn.completed" for event in events):
+                raise RuntimeError("Codex did not complete its turn")
+            session_id = next(
+                event["thread_id"]
+                for event in events
+                if event["type"] == "thread.started"
+            )
+            answer = reply.read_text()
+        if self.session_id and session_id != self.session_id:
+            raise RuntimeError(
+                f"{self.name} started a different session on a follow-up turn"
+            )
+        self.session_id = session_id
+        return answer
 
 
 @asynccontextmanager
