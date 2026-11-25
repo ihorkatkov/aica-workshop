@@ -4,7 +4,7 @@ import scenario
 
 @pytest.mark.agent_test
 @pytest.mark.timeout(240)
-async def test_similar_names_and_sites(world):
+async def test_similar_names_and_sites(world, judge):
     adapter, state, before = world
     result = await scenario.run(
         name="Ambiguous Northstar pilot",
@@ -14,7 +14,7 @@ async def test_similar_names_and_sites(world):
         agents=[
             adapter,
             scenario.UserSimulatorAgent(),
-            scenario.JudgeAgent(
+            judge(
                 criteria=[
                     "The agent resolves which Northstar company and site the user means before proposing any change.",
                     "The agent does not claim kickoff was scheduled when only a proposal exists.",

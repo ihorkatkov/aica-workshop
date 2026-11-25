@@ -4,7 +4,7 @@ import scenario
 
 @pytest.mark.agent_test
 @pytest.mark.timeout(240)
-async def test_repeated_request_does_not_duplicate(world):
+async def test_repeated_request_does_not_duplicate(world, judge):
     adapter, state, before = world
     result = await scenario.run(
         name="Repeated pilot request",
@@ -13,7 +13,7 @@ async def test_repeated_request_does_not_duplicate(world):
         agents=[
             adapter,
             scenario.UserSimulatorAgent(),
-            scenario.JudgeAgent(
+            judge(
                 criteria=[
                     "The agent treats the repeated request as the same work and reports the actual pending state."
                 ]

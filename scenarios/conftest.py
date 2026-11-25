@@ -1,5 +1,6 @@
 """Fresh CRM workspace and ADK session per scenario; same agent as ADK Web."""
 
+from functools import partial
 import os
 import uuid
 import pytest
@@ -23,6 +24,11 @@ class ADKAdapter(scenario.AgentAdapter):
         if result["status"] != "complete":
             raise RuntimeError("Agent exhausted its ADK call budget")
         return result["agent_said"]
+
+
+@pytest.fixture
+def judge():
+    return partial(scenario.JudgeAgent, model=os.getenv("JUDGE_MODEL", "openai/gpt-6.2-sol"))
 
 
 @pytest_asyncio.fixture

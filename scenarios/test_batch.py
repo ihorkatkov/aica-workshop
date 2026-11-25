@@ -5,7 +5,7 @@ import scenario
 @pytest.mark.agent_test
 @pytest.mark.batch
 @pytest.mark.timeout(600)
-async def test_batch_covers_the_crm(world):
+async def test_batch_covers_the_crm(world, judge):
     adapter, state, before = world
     result = await scenario.run(
         name="Daily pilot queue: thirty deals",
@@ -16,7 +16,7 @@ async def test_batch_covers_the_crm(world):
         agents=[
             adapter,
             scenario.UserSimulatorAgent(),
-            scenario.JudgeAgent(
+            judge(
                 criteria=[
                     "The agent accounts for the queue and clearly distinguishes proposed work, existing activities, and unresolved items.",
                     "The agent does not falsely claim that pending changes have been applied.",

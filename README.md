@@ -119,7 +119,7 @@ make scenarios review HOST=1
 make check-policy HOST=1
 ```
 
-Do not start host and Docker servers on the same ports. To use your own provider after the workshop, configure `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `AGENT_MODEL`, and `SCENARIO_MODEL` in `.env`. The facilitator's proxy access is temporary. If a pair cannot connect during the session, join a working pair; there is no model-free fallback.
+Do not start host and Docker servers on the same ports. To use your own provider after the workshop, configure `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `AGENT_MODEL`, `SCENARIO_MODEL` (simulator), and `JUDGE_MODEL` (judge) in `.env`. The facilitator's proxy access is temporary. If a pair cannot connect during the session, join a working pair; there is no model-free fallback.
 
 ## Debrief
 
