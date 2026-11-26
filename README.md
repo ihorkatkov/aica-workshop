@@ -19,10 +19,9 @@ The main challenge is the first gate: a fact the CRM can check. The stretch is t
 
 ## Start
 
-Pair up. One laptop needs Docker Compose v2, Make, curl, OpenSSL, and a POSIX shell (macOS, Linux, or WSL). The facilitator gives your pair a private `.env` file with model access already configured. No individual provider account is needed.
+Pair up. One laptop needs Docker Compose v2, Make, curl, OpenSSL, and a POSIX shell (macOS, Linux, or WSL). The facilitator gives you a workshop API key. Enter it when setup prompts you. Setup checks the key and saves it in your local `.env` for future runs. No individual provider account is needed.
 
 ```sh
-cp /path/to/your-pair.env .env
 make setup
 ```
 

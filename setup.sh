@@ -49,11 +49,12 @@ case "${1:-up}" in
     step 'Building the ADK lab…' docker compose build lab crm web
     ;;
   up)
+    sh workshop/setup-key.sh
     step 'Preparing the ADK lab…' docker compose build lab crm web
     step 'Starting LangWatch…' docker compose up -d app workers
     step 'Waiting for sign-in to be ready…' wait_for_login
     sh workshop/setup-account.sh
-    step "Starting CRM and ADK Web…" docker compose up -d crm web
+    step "Starting CRM and ADK Web…" docker compose up -d --wait crm web
     step "Checking the real model, CRM tools and trace…" docker compose run --rm -T lab preflight
     printf "ADK Web: http://localhost:8000\nCRM approval desk: http://localhost:8001\nRun make preflight to verify the real model.\n"
     ;;

@@ -5,9 +5,7 @@ The workshop uses upstream CLIProxyAPI v8.1.3 (checksum-verified release), runni
 Endpoint: `https://aica-llm.pantheon-ops.boxd.sh/v1`
 
 - Model: `gpt-6-luna`, consumed through standard ADK LiteLLM and Scenario.
-- 11 pair-specific client keys plus a facilitator key. These are proxy keys, not provider credentials.
-- Prepared private files: `.lab/participants/pair-01.env` through `pair-11.env`.
-- Deliver one pair file privately; copy it to `.env` before `make setup`. No files have been sent to participants automatically.
+- Give participants the shared workshop API key privately. On first setup, they enter it at the prompt. Previously issued pair and facilitator keys also work.
 - OAuth remains in the remote service's private auth directory. No OAuth token is distributed to participants or included in the repository.
 - The management API and control panel are disabled. Unauthenticated model requests must return 401.
 - The machine has auto-suspend and auto-hibernate disabled. No dependency on a laptop tunnel.

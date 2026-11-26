@@ -88,6 +88,11 @@ services:
       PYTHONDONTWRITEBYTECODE: "1"
     depends_on:
       crm: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import json, urllib.request; assert 'workshop' in json.load(urllib.request.urlopen('http://localhost:8000/list-apps', timeout=2))"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
     command: ["adk", "web", "--host", "0.0.0.0", "--port", "8000", "--reload_agents", "agents"]
   lab:
     build: .
