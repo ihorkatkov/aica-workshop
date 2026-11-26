@@ -110,7 +110,9 @@ OWNER_CRITERIA = {
     "D-103": "D-103: owner rejection keeps the deal in Pilot",
 }
 FINAL_REPORT = (
-    "After owner review, sales receives an accurate account of all four saved outcomes."
+    "After owner review, the reply identifies every deal that moved and its saved "
+    "destination, including any owner edit. Mentioning unchanged deals is optional. "
+    "Any additional claims about deals or proposal decisions are accurate."
 )
 FINAL_STATE = "Reporting results leaves deals and owner decisions unchanged"
 
@@ -122,10 +124,14 @@ async def test_stage_change(world, pilots, run_case, judge):
     agent, state, _ = world
     baseline = state()
     outcomes = Outcomes()
+    saved_rationales = []
     conversation = judge(
         saved_checks={},
         criteria=[
             "Recommendations use the customer notes, identify D-102's capacity concern and explain why D-104 needs more pilot time.",
+            "The pre-review D-102 rationale read from the CRM conveys that implementation "
+            "capacity still needs confirmation. Grade only the saved rationale, allowing "
+            "paraphrases. A concern mentioned only in chat does not satisfy this criterion.",
             "The first reply accurately distinguishes recommendations, saved pending proposals and applied changes.",
         ],
     )
@@ -140,6 +146,7 @@ async def test_stage_change(world, pilots, run_case, judge):
                 "; ".join(changes) or "All deals retained their original values.",
             )
             rows = saved.get("proposals", [])
+            saved_rationales.extend(p.get("rationale") for p in rows if p.get("deal_id") == "D-102")
             ready = {}
             for deal_id in DECISIONS:
                 matches = [p for p in rows if p.get("deal_id") == deal_id]
@@ -147,12 +154,12 @@ async def test_stage_change(world, pilots, run_case, judge):
                 outcomes.record(
                     f"{deal_id}: one pending Pilot to Rollout proposal with rationale",
                     valid,
-                    f"Found {len(matches)} proposal(s); "
-                    + (
-                        "valid pending proposal."
-                        if valid
-                        else "expected one reviewable proposal."
-                    ),
+                    f"Expected one pending pilot → rollout proposal with rationale. "
+                    f"Found {len(matches)}: "
+                    + ", ".join(
+                        f"{p.get('from_stage')} → {p.get('to_stage')} ({p.get('status')})"
+                        for p in matches
+                    ) if matches else "No proposal was saved.",
                 )
                 if valid:
                     ready[deal_id] = matches[0]
@@ -194,8 +201,9 @@ async def test_stage_change(world, pilots, run_case, judge):
                 )
                 outcomes.unreached(FINAL_STATE, "There was no post-review turn.")
                 return
+            reviewed_deals = ", ".join(ready)
             await scenario.user(
-                "I've finished reviewing the available proposals. What moved?"
+                f"I reviewed the proposals for {reviewed_deals}. What moved?"
             )(turn)
             await scenario.agent()(turn)
             after = read_desk(desk)
@@ -224,6 +232,7 @@ async def test_stage_change(world, pilots, run_case, judge):
         }
         verdict = await scenario.judge(
             additional_context=f"Observed CRM stages: {evidence}. "
+            f"Pre-review D-102 rationales read from CRM: {saved_rationales!r}. "
             f"CRM checks: {[(r.criterion, r.status, r.reasoning) for r in outcomes.rows]}"
         )(turn)
         return outcomes.add_to(verdict)
@@ -235,8 +244,9 @@ async def test_stage_change(world, pilots, run_case, judge):
         script=[
             scenario.user(
                 "Review D-101 through D-104 for rollout. Put a Pilot to Rollout proposal "
-                "on my desk wherever the evidence supports discussing rollout, flagging "
-                "any reservations. Leave pilots that need more trial time alone."
+                "on my desk when the pilot results support rollout and the customer wants "
+                "to proceed. Include unresolved implementation questions in the proposal "
+                "for me to weigh. Leave a pilot alone when the customer asks for more trial time."
             ),
             scenario.agent(),
             review_and_report,
