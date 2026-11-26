@@ -583,12 +583,17 @@ make setup</pre></div>
 			<div class="card frag"><h3 class="c-promote">One more boundary</h3><p style="font-size:30px">A VM is not a policy check. It limits the damage when an agent gets it wrong.</p></div>
 		</div>
 		<div>
-<pre style="font-size:26px;padding:26px 30px;white-space:pre-wrap">curl -fsSL https://boxd.sh/downloads/install.sh | sh
+<p style="font-size:30px;margin-bottom:12px"><b class="c-promote">Ask your coding agent</b></p>
+<pre style="padding:18px 26px;font-size:26px;white-space:pre-wrap;border-left:8px solid var(--promote)">Install the boxd CLI, create a machine, then
+clone github.com/ihorkatkov/aica-workshop
+on it and run make setup.</pre>
+			<p style="font-size:30px;margin:20px 0 12px"><b class="c-validate">Or manually</b> <span class="muted" style="font-size:26px;margin-left:10px">aica is just a name, pick your own</span></p>
+<pre style="font-size:24px;padding:18px 26px;white-space:pre-wrap">curl -fsSL https://boxd.sh/downloads/install.sh | sh
 boxd machine new aica --delete-after 1d
 ssh aica.boxd
 <span class="muted"># there: clone the repo, make setup</span></pre>
-			<p style="margin-top:26px;font-size:36px">Promo <span class="chip c-promote" style="font-size:36px">IHOR50</span> gives 50 + 30 credits.</p>
-			<p class="small muted" style="margin-top:18px">Run the workshop there, then try it on your own workflow. Steps are in the README.</p>
+			<p style="margin-top:20px;font-size:34px">Promo <span class="chip c-promote" style="font-size:34px">IHOR50</span> gives 50 + 30 credits.</p>
+			<p class="muted" style="margin-top:12px;font-size:28px">Then try it on your own workflow. Steps are in the README.</p>
 		</div>
 	</div>
 </section>
