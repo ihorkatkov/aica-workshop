@@ -93,6 +93,9 @@ services:
     build: .
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     profiles: ["lab"]
+    # langwatch-ksuid 1.0.1 mistakes tunnel addresses for MACs. An empty
+    # interface directory selects its random instance ID for this process.
+    tmpfs: ["/sys/class/net:ro"]
     working_dir: /work
     volumes: [".:/work"]
     environment:
