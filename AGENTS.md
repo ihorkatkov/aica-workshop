@@ -1,6 +1,6 @@
 # AICA workshop
 
-Pairs have about 30 minutes of build time. They use a synthetic CRM to learn where an agent can act on its own and where a person owns the decision. ADK, Claude Code and Codex exercise the same CRM through MCP. Help participants follow a request from the conversation through a tool call to the saved record. The kickoff scenarios grade the agent on the observed turn. A correct refusal can pass on the starter even while the separate CRM enforcement check fails.
+Workshop groups have about 30 minutes of build time. They use a synthetic CRM to learn where an agent can act on its own and where a person owns the decision. ADK Web loads the CRM tools directly. Claude Code and Codex connect over MCP. Help participants follow a request from the conversation through a tool call to the saved record. The kickoff scenarios grade the agent on the observed turn. A correct refusal can pass on the starter even while the separate CRM enforcement check fails.
 
 ## Main challenge · Kickoff
 
@@ -18,6 +18,6 @@ The stretch implementation is one tool, `propose_stage_change`, defined with `@t
 
 See scenarios/test_stage.py for the owner's three decisions. Its owner step exercises the browser-facing CRM contract. Demonstrate the visible review, edit and reject controls in the actual desk as well. LangWatch reports an unavailable owner step as inconclusive with a “Not reached” reason. Once a pending Pilot to Rollout proposal exists in the workshop CRM, run `make check-stage` to check agent authority and replay rejection separately. Each probe uses a disposable database copy. Set `STAGE_PROBE_DB` to select another prepared database.
 
-## Guiding a pair
+## Guiding a group
 
-Start with their observed trace and saved deal. Ask which component made the decision and what evidence would prove it held. Show the smallest relevant entry point: crm/mcp.py for tool discovery, crm/ for the write boundary and owner desk, and scenarios/ for acceptance criteria. Let the pair choose the tool design and implementation. Keep fixture evidence and acceptance checks independent of their solution. Use the synthetic workspace throughout.
+Start with their observed trace and saved deal. Ask which component made the decision and what evidence would prove it held. Show the smallest relevant entry point: crm/mcp.py for tool discovery, crm/ for the write boundary and owner desk, and scenarios/ for acceptance criteria. Let the group choose the tool design and implementation. Keep fixture evidence and acceptance checks independent of their solution. Use the synthetic workspace throughout.

@@ -233,7 +233,7 @@ svg .frag { transform: none; }
 			<h2>I build agentic systems for real business operations.</h2>
 			<ul>
 				<li><b>A decade</b> engineering systems that handle real money and can't afford to break.</li>
-				<li><b>Neno</b>, Europe's first AI-powered financial stack for SMEs. I own the full technical architecture: document processing, banking infrastructure, and the agents that automate financial workflows.</li>
+				<li><b>Neno</b>, an AI-powered financial stack for European SMEs. I own the full technical architecture: document processing, banking infrastructure, and the agents that automate financial workflows.</li>
 				<li><b>Before:</b> ran a software agency, built algorithmic trading systems with <span style="white-space:nowrap">sub-18-microsecond</span> tick-to-order, led teams building systems with 99.99% uptime.</li>
 				<li><b>The last couple of years:</b> building AI agents.</li>
 				<li><b>Outside work:</b> my own research and products like Plink, an ambient AI that offers live hints and takes action during meetings.</li>
@@ -281,10 +281,11 @@ svg .frag { transform: none; }
 			<p class="mono c-propose" style="font-size:36px;margin-bottom:34px">github.com/ihorkatkov/aica-workshop</p>
 			<div class="steps">
 				<div><pre>git clone https://github.com/ihorkatkov/aica-workshop</pre></div>
-				<div><pre>make setup</pre></div>
+				<div><pre>cd aica-workshop
+make setup</pre></div>
 			</div>
-			<p style="margin-top:30px;font-size:34px">It asks for the workshop key. <span class="chip c-promote" id="workshop-key" style="margin-left:14px">key: on the whiteboard</span></p>
-			<p class="small muted" style="margin-top:28px">About 1 minute with images cached, about 4 minutes cold. Needs Docker Compose v2 and Make.</p>
+			<p style="margin-top:30px;font-size:34px">It asks for the workshop key. <span class="chip c-promote" id="workshop-key" style="margin-left:14px">key: ask the facilitator</span></p>
+			<p class="small muted" style="margin-top:28px">About 1 minute with images cached, about 4 minutes cold. Needs Git, Docker Compose v2, Make, curl, OpenSSL; macOS, Linux or WSL.</p>
 		</div>
 	</div>
 </section>
@@ -292,7 +293,7 @@ svg .frag { transform: none; }
 <!-- 6 -->
 <section class="slide s6">
 	<div class="kicker">What an agent is</div>
-	<h2>A model in a loop. A tool call is just text.</h2>
+	<h2>A model in a loop. A tool call is structured text.</h2>
 	<div class="tc">
 		<div class="convo">
 			<small>the conversation</small>
@@ -327,13 +328,13 @@ svg .frag { transform: none; }
 				<li class="frag"><span>The conversation is text. <b>All of it</b> goes to the model.</span></li>
 				<li class="frag"><span>The model appends text. A <b class="c-propose">tool call</b> is text too.</span></li>
 				<li class="frag"><span>The <b class="c-validate">harness</b> executes the call. Not the model.</span></li>
-				<li class="frag"><span>The result is appended. The model reads on and continues.</span></li>
+				<li class="frag"><span>The result is text too. Whoever writes the record writes into your prompt.</span></li>
 			</ol>
 		</div>
 	</div>
 	<div class="row frag" style="margin-top:26px;align-items:center;gap:18px">
 		<span class="chip">MCP</span><span class="chip">CLI</span><span class="chip">Bash</span>
-		<p style="font-size:34px">are all tool calls. <span class="muted">Today: direct tools in Google ADK, and the same tools over MCP.</span></p>
+		<p style="font-size:34px">are ways to reach tools. Nothing happens until the harness runs the call. <span class="muted">Here: ADK tools and MCP.</span></p>
 	</div>
 </section>
 
@@ -350,17 +351,17 @@ svg .frag { transform: none; }
 	<h2>When it is business-critical, or money moves:</h2>
 	<div class="grid3">
 		<div class="card frag" style="border-top:10px solid var(--propose)"><h3 class="c-propose" style="font-size:50px">Agents propose and decide</h3><p style="font-size:38px;color:var(--text)">On their own, for most of the work.</p></div>
-		<div class="card frag" style="border-top:10px solid var(--validate)"><h3 class="c-validate" style="font-size:50px">Systems validate</h3><p style="font-size:38px;color:var(--text)">Every decision. A proposal is a decision too.</p></div>
+		<div class="card frag" style="border-top:10px solid var(--validate)"><h3 class="c-validate" style="font-size:50px">Systems validate</h3><p style="font-size:38px;color:var(--text)">Every write. Checked at the server, not in the prompt.</p></div>
 		<div class="card frag" style="border-top:10px solid var(--promote)"><h3 class="c-promote" style="font-size:50px">Humans promote</h3><p style="font-size:38px;color:var(--text)">Only the critical ones. The person who owns the outcome.</p></div>
 	</div>
-	<p class="lead frag" style="margin-top:56px;font-size:50px">Most systems are not built this way. For them, <span class="c-reject">the tool call is the write.</span></p>
+	<p class="lead frag" style="margin-top:56px;font-size:50px">In most demos, <span class="c-reject">the tool call is the write.</span></p>
 </section>
 
 <!-- 8 -->
 <section class="slide">
 	<div class="kicker">The business · all records are synthetic</div>
 	<h2>We sell scheduling software to organisations with many sites.</h2>
-	<p class="lead muted" style="margin-bottom:36px">One deal = one customer site that asked for a pilot. At Delta Health, kickoff is the day our engineers get logins to live patient scheduling in Amsterdam.</p>
+	<p class="lead muted" style="margin-bottom:36px">One deal = one customer site that asked for a pilot. D-104 is the Northstar Analytics Labs pilot in Amsterdam. Kickoff gives our engineers access to the customer’s live scheduling system.</p>
 	<div class="grid4">
 		<div class="card"><h3 class="c-propose">Sales</h3><p>asks for kickoff and wants it soon</p></div>
 		<div class="card"><h3 class="c-validate">Security</h3><p>the customer's reviewer. Records a clearance with an expiry date</p></div>
@@ -391,7 +392,8 @@ svg .frag { transform: none; }
 			<path d="M340 262V330" stroke="currentColor" stroke-width="3" stroke-dasharray="6 8"/>
 			<text x="340" y="372" text-anchor="middle" class="lbl" style="fill:currentColor">Security clearance</text>
 			<text x="340" y="412" text-anchor="middle" class="sub" style="fill:var(--text)">a fact the CRM can check</text>
-			<text x="340" y="452" text-anchor="middle" class="lbl" style="font-size:28px">System validates · no human</text>
+			<text x="340" y="452" text-anchor="middle" class="lbl" style="font-size:28px">System checks a recorded human decision</text>
+			<text x="340" y="490" text-anchor="middle" class="sub" style="fill:var(--text)">no approval step</text>
 		</g>
 		<g class="gate frag" style="color:var(--promote)">
 			<rect x="1050" y="100" width="80" height="160" rx="16" fill="#2c2110" stroke="currentColor" stroke-width="4"/>
@@ -407,7 +409,7 @@ svg .frag { transform: none; }
 <!-- 10 -->
 <section class="slide s10">
 	<div class="kicker">The lab</div>
-	<h2 style="margin-bottom:26px">The agent asks. The CRM decides what changes.</h2>
+	<h2 style="margin-bottom:26px">The agent decides what to ask for. The CRM server controls what gets written.</h2>
 	<svg class="diagram" viewBox="0 0 1720 330">
 		<defs><marker id="ah3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#56617a"/></marker></defs>
 		<path d="M115 40H1605" stroke="#2b3345" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
@@ -427,7 +429,7 @@ svg .frag { transform: none; }
 			<rect class="node n-db" x="1490" y="90" width="230" height="130" rx="20"/><text class="lbl" x="1605" y="148" text-anchor="middle">Database</text><text class="sub" x="1605" y="184" text-anchor="middle">SQLite</text>
 		</g>
 		<path d="M0 250H826" stroke="var(--propose)" stroke-width="4"/><text class="sub" x="413" y="292" text-anchor="middle" style="fill:var(--propose);font-size:28px">decides what to ask for</text>
-		<path d="M894 250H1720" stroke="var(--validate)" stroke-width="4"/><text class="sub" x="1307" y="292" text-anchor="middle" style="fill:var(--validate);font-size:28px">decides what changes · the only writer</text>
+		<path d="M894 250H1720" stroke="var(--validate)" stroke-width="4"/><text class="sub" x="1307" y="292" text-anchor="middle" style="fill:var(--validate);font-size:28px">controls what gets written · the only writer</text>
 	</svg>
 	<div style="height:64px;margin-top:6px;position:relative">
 		<p class="frag c-validate" style="position:absolute;font-size:36px" data-hide="2">Allowed: the write lands in the database.</p>
@@ -451,18 +453,32 @@ svg .frag { transform: none; }
 		<div class="card"><h3>What it called</h3><p>the trace in LangWatch</p></div>
 		<div class="card"><h3>What changed</h3><p>D-104 in the CRM: review, kickoffs, activity</p></div>
 	</div>
-	<p class="small muted" style="margin-top:30px">The model may also refuse. We record what happened. Then <code>make reset</code> and start a new chat.</p>
+	<p class="small muted" style="margin-top:30px">The model may also refuse. We record what happened. A rejected write leaves no Activity row, only a trace.</p>
+	<p class="small" style="margin-top:14px">Then <code>make reset</code> and a new chat.</p>
+</section>
+
+<!-- scenarios and evals -->
+<section class="slide">
+	<div class="kicker">Scenarios and evals</div>
+	<h2>How do you know it works?</h2>
+	<div class="grid2">
+		<div class="card frag" style="border-top:10px solid var(--reject)"><h3>The vibe check</h3><p style="font-size:36px">Install it, try it once, ship it. It breaks with many clients, or when the job is mission-critical.</p></div>
+		<div class="card frag" style="border-top:10px solid var(--validate)"><h3>Scenarios and evals</h3><p style="font-size:36px">A scenario sends a real request to the real agent, then checks what was saved in the system and has a model judge the reply. An eval scores answers across many cases. Rerun both after every change.</p></div>
+	</div>
+	<p class="lead frag" style="margin-top:40px">Every change has to prove itself, even a simple one. And not only the prompt:</p>
+	<p class="frag" style="margin-top:18px"><span class="chip">prompt</span> <span class="chip">tools + descriptions</span> <span class="chip">skills</span> <span class="chip">MCP servers</span> <span class="chip">the whole setup</span></p>
 </section>
 
 <!-- 12 -->
 <section class="slide">
 	<div class="kicker">LangWatch Scenario</div>
-	<h2>A polite refusal can pass while the server is still wide open.</h2>
+	<h2>A polite reply is not proof. Check what was saved.</h2>
 	<div class="grid2">
-		<div class="card" style="border-top:10px solid var(--propose)"><h3>Scenarios test the conversation</h3><p style="font-size:36px">A simulated user and a judge, both real models. Did the agent explain the blocker and the next step?</p><p style="margin-top:22px"><code>make scenarios kickoff</code></p></div>
-		<div class="card" style="border-top:10px solid var(--validate)"><h3>Probes test the boundary</h3><p style="font-size:36px">Call the write directly. Did the kickoff count or the stage move? No model involved.</p><p style="margin-top:22px"><code>make check-kickoff</code></p></div>
+		<div class="card" style="border-top:10px solid var(--propose)"><h3>What the agent said</h3><p style="font-size:36px">A model judge reads the reply. Did the agent explain the blocker and the next step sales can take?</p></div>
+		<div class="card" style="border-top:10px solid var(--validate)"><h3>What the system saved</h3><p style="font-size:36px">Plain assertions on the record. Right deal? Did the kickoff count or the stage move?</p></div>
 	</div>
-	<p class="lead" style="margin-top:44px">You need both. And refusing everything must fail too.</p>
+	<p class="lead" style="margin-top:36px">One scripted request, the real agent, both checks: <code>make scenarios kickoff</code>. Refusing everything must fail too.</p>
+	<p class="muted" style="margin-top:16px;font-size:34px">One green run is one sample. Repeat before you claim improvement.</p>
 </section>
 
 <!-- 13 -->
@@ -479,8 +495,8 @@ svg .frag { transform: none; }
 		<div class="card">
 			<h3>Edit</h3>
 			<p style="margin-bottom:22px"><code>crm/policy.py</code> → <code>validate(record, action)</code></p>
-			<h3>Prove</h3>
-			<div class="cmds"><code>make check-policy</code><code>make check-kickoff</code><code>make scenarios kickoff</code></div>
+			<h3>Check</h3>
+			<div class="cmds"><code>make scenarios kickoff</code></div>
 		</div>
 	</div>
 	<p class="lead" style="margin-top:36px;font-size:40px">Done when D-104 is blocked while its review is open, and goes through, <span class="c-validate">with no human approval</span>, once security clears it.</p>
@@ -517,7 +533,7 @@ svg .frag { transform: none; }
 <!-- 15 -->
 <section class="slide">
 	<div class="timer c-promote" data-min="15"></div>
-	<span class="badge p">Challenge 2 · stretch · human promotes</span>
+	<span class="badge p">Challenge 2 · optional stretch · human promotes</span>
 	<h2>The agent proposes a stage change. The owner decides.</h2>
 	<div class="grid2" style="grid-template-columns:1.05fr .95fr">
 		<div class="card edge-p">
@@ -529,11 +545,11 @@ svg .frag { transform: none; }
 		<div class="card">
 			<h3>Be the owner, in the CRM</h3>
 			<p style="font-size:34px"><b class="c-validate">D-101</b> approve · <b class="c-promote">D-102</b> edit to Rollout planning · <b class="c-reject">D-103</b> reject · <b style="color:var(--text)">D-104</b> stays in Pilot, no proposal</p>
-			<h3 style="margin-top:24px">Prove</h3>
-			<div class="cmds"><code>make scenarios stage</code><code>make check-stage</code></div>
+			<h3 style="margin-top:24px">Check</h3>
+			<div class="cmds"><code>make check-stage</code><code>make scenarios stage</code></div>
 		</div>
 	</div>
-	<p class="lead" style="margin-top:36px;font-size:40px">Done when only the change the owner authorised takes effect, and the agent reports the saved outcome.</p>
+	<p class="lead" style="margin-top:28px;font-size:36px">Run <code>make check-stage</code> while a Pilot → Rollout proposal is pending, before the owner decides. Done when the owner's decision is what gets applied.</p>
 </section>
 
 <!-- 16 -->
@@ -544,6 +560,7 @@ svg .frag { transform: none; }
 		<div class="frag"><span>Approval re-checks only that the <b>stage is unchanged</b> since the proposal.</span></div>
 		<div class="frag"><span>The policy is <b>not re-run</b> when the owner approves.</span></div>
 		<div class="frag"><span>Approve applies <b>immediately</b>. There is no separate promote step.</span></div>
+		<div class="frag"><span>Kickoff does not check the stage and is <b>not idempotent</b>. A retry records a second kickoff and can undo an owner's approval.</span></div>
 		<div class="frag"><span>Identities are <b>local demo</b> identities. This is not production authorization.</span></div>
 	</div>
 	<p class="lead frag muted" style="margin-top:50px">Each one is a design question for your own system.</p>
