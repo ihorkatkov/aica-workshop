@@ -34,14 +34,23 @@ def request(workspace, method, path, *, human=False, **kwargs):
 
 
 def crm_tools(workspace):
+    tools = []
+
+    def tool(function):
+        tools.append(function)
+        return function
+
+    @tool
     def search_deals(query: str = "") -> list[dict]:
         """Search deals by company, site, ID or status. Empty query lists all deals."""
         return request(workspace, "GET", "deals", params={"query": query})
 
+    @tool
     def get_record(record_id: str) -> dict:
         """Read a deal (D-), company (C-), contact (P-), or saved stage proposal (PR-) by ID."""
         return request(workspace, "GET", f"records/{quote(record_id, safe='')}")
 
+    @tool
     def write_deal(deal_id: str, action: str) -> dict:
         """Apply schedule_kickoff or request_review_update to the specified deal."""
         return request(
@@ -51,6 +60,7 @@ def crm_tools(workspace):
             json={"action": action},
         )
 
+    @tool
     def propose_stage_change(
         deal_id: str,
         to_stage: Annotated[
@@ -79,9 +89,4 @@ def crm_tools(workspace):
             json={"to_stage": to_stage, "rationale": rationale},
         )
 
-    return [
-        search_deals,
-        get_record,
-        write_deal,
-        propose_stage_change,
-    ]
+    return tools
