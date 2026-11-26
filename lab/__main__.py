@@ -52,7 +52,8 @@ def main():
             raise RuntimeError("Model preflight did not complete a tool round trip")
         from .telemetry import verify
 
-        return {**result, "langwatch": verify(result["trace_id"])}
+        readback = verify(result["trace_id"], turn=(args.prompt, result["agent_said"]))
+        return {**result, "langwatch": readback}
     if args.command == "reset":
         return request(workspace, "POST", "reset", human=True)
     if args.command == "state":

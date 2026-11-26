@@ -29,6 +29,7 @@ class Conversation:
         status = "complete"
         with trace.get_tracer("aica").start_as_current_span("workshop-turn") as span:
             trace_id = format(span.get_span_context().trace_id, "032x")
+            span.set_attribute("langwatch.input", message)
             try:
                 async for event in self.runner.run_async(
                     user_id="participant",
@@ -49,10 +50,12 @@ class Conversation:
                         )
             except LlmCallsLimitExceededError:
                 status = "turn_limit"
+            reply = "\n".join(final)
+            span.set_attribute("langwatch.output", reply)
             span.set_attribute("workshop.status", status)
         flush()
         return {
-            "agent_said": "\n".join(final),
+            "agent_said": reply,
             "status": status,
             "tool_calls": calls,
             "trace_id": trace_id,
