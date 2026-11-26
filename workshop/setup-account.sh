@@ -23,4 +23,4 @@ for attempt in 1 2 3 4; do
   echo 'Trace storage is still starting. Retrying…'
   sleep 5
 done
-printf '\nLangWatch ready!\n\n  Dashboard  %s/aica-lab/traces\n  Email       %s\n  Password    %s\n\n  Next: open ADK Web at http://localhost:8000\n' "$url" "$email" "$password"
+printf '\nLangWatch ready!\n\n  Dashboard  %s/aica-lab/traces\n  Email       %s\n  Password    %s\n' "$url" "$email" "$password"

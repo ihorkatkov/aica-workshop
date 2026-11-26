@@ -79,7 +79,7 @@ services:
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     working_dir: /work
     volumes: [".:/work"]
-    ports: ["127.0.0.1:8000:8000"]
+    ports: ["127.0.0.1:${AICA_WEB_PORT:-8500}:8000"]
     environment:
       CRM_URL: http://crm:8001
       LANGWATCH_ENDPOINT: http://app:5560

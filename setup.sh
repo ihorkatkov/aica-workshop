@@ -54,10 +54,10 @@ case "${1:-up}" in
     step 'Starting LangWatch…' docker compose up -d app workers
     step 'Waiting for sign-in to be ready…' wait_for_login
     sh workshop/setup-account.sh
-    step "Starting CRM and ADK Web…" docker compose up -d --wait crm web
+    sh workshop/start-web.sh
     step "Checking ADK Web lists the workshop…" docker compose exec -T web python -c       "import json, urllib.request; assert 'workshop' in json.load(urllib.request.urlopen('http://localhost:8000/list-apps', timeout=10))"
     step "Checking the real model, CRM tools and trace…" docker compose run --rm -T lab preflight
-    printf "ADK Web: http://localhost:8000\nCRM approval desk: http://localhost:8001\nRun make preflight to verify the real model.\n"
+    printf "CRM approval desk: http://localhost:8001\nRun make preflight to verify the real model.\n"
     ;;
   *) echo 'Usage: ./setup.sh [pull|up]' >&2; exit 2 ;;
 esac

@@ -16,7 +16,7 @@ If you already have the repository, run `make setup` from its root. Enter the ke
 
 | Open | What to look for |
 | --- | --- |
-| [Agent chat](http://localhost:8000) | Select **workshop** and ask as sales. |
+| Agent chat · use the **ADK Web** URL printed by setup, or **Chat with agent** in the CRM | Select **workshop** and ask as sales. |
 | [LangWatch traces](http://localhost:5560/aica-lab/traces) | Open the trace for your request. Which tool did the agent call, with which deal ID, and what came back? |
 | [CRM → Customer pilots](http://localhost:8001) | Search for **D-104**, the Northstar Analytics Labs pilot in Amsterdam. **Details** shows the review and stage. **Activity** shows who changed the record. Refresh after each request. |
 

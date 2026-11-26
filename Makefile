@@ -33,10 +33,9 @@ pull:
 	@./setup.sh pull
 web:
 ifeq ($(HOST),1)
-	@PYTHONPATH="$(CURDIR)" .venv/bin/adk web --host 127.0.0.1 --port 8000 --reload_agents agents
+	@PYTHONPATH="$(CURDIR)" PYTHON="$(PYTHON)" sh workshop/start-web.sh host
 else
-	@docker compose up -d web
-	@printf 'Agent chat: http://localhost:8000\n'
+	@sh workshop/start-web.sh
 endif
 ui: crm
 crm:

@@ -5,6 +5,7 @@ import hmac
 from pathlib import Path
 import secrets
 import time
+from dotenv import dotenv_values
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from . import stages
@@ -47,10 +48,13 @@ def install_ui(app, store):
             raise HTTPException(403, "Open the local CRM directly.")
         value = f"{int(time.time())}:{secrets.token_urlsafe(24)}"
         token = value + "." + sign(value)
+        # Host mode can start chat after the CRM, so read the selected port on refresh.
+        port = dotenv_values(Path(__file__).resolve().parents[1] / ".env").get("AICA_WEB_PORT")
         html = (
             (Path(__file__).parent / "console.html")
             .read_text()
             .replace("__CSRF__", token)
+            .replace("__ADK_WEB_PORT__", port if port and port.isascii() and port.isdigit() else "8500")
         )
         response = HTMLResponse(
             html,
