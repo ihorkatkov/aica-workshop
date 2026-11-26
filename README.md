@@ -82,7 +82,7 @@ Implement `propose_stage_change(deal_id, to_stage, rationale)` as a decorated to
 
 Run `make scenarios stage` for the four-pilot batch. With a pending proposal in your CRM, `make check-stage` verifies agent authorization and replay handling on disposable database copies. See [AGENTS.md](AGENTS.md) for the acceptance criteria.
 
-All three scenarios support ADK, Claude Code and Codex. The shared scenario fixture pins Claude Code to `claude-haiku-5-5` and Codex to `gpt-6-luna`. The default is kickoff on ADK. For native clients, prepare host Python 3.12 with `make scenario-env` and sign into each selected CLI.
+All three scenarios support ADK, Claude Code and Codex. The shared scenario fixture pins Claude Code to `claude-haiku-5-5` and Codex to `gpt-6-luna`. The default is kickoff on ADK. For native clients, install uv or Python 3.12 with venv support and sign into each selected CLI. The scenario command prepares its host environment automatically. Before the first case for each native client, it checks for the executable and sends a short prompt to the pinned model. An unavailable client is skipped with the reason in the pytest summary. Other clients continue.
 
 ```sh
 make scenarios list AGENTS=all       # show the three cases across three clients

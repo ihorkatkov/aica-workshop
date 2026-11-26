@@ -4,6 +4,8 @@ from functools import partial
 import os
 import json
 import uuid
+import shutil
+import subprocess
 import pytest
 import pytest_asyncio
 import scenario
@@ -88,7 +90,7 @@ class CRMJudge(scenario.JudgeAgent):
         return verdict
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def native_models():
     """Model pins for all workshop scenarios that launch native clients."""
     return {"claude": "claude-haiku-5-5", "codex": "gpt-6-luna"}
@@ -136,8 +138,39 @@ def judge():
     return partial(CRMJudge, model=os.getenv("JUDGE_MODEL", "openai/gpt-6.2-sol"))
 
 
+async def native_probe(client, directory, model):
+    try:
+        probe = NativeClient(client, None, directory, model=model)
+        answer = await probe.turn("Reply with OK without using tools.", timeout=90)
+        if not answer.strip():
+            return f"{model} returned an empty reply"
+    except subprocess.TimeoutExpired:
+        return f"{model} probe timed out after 90 seconds"
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as error:
+        return f"{model}: {error}"
+    return None
+
+
+@pytest.fixture(scope="session")
+def native_preflights():
+    return {}
+
+
 @pytest_asyncio.fixture
-async def world(request, monkeypatch, tmp_path, native_models):
+async def world(request, monkeypatch, tmp_path, native_models, native_preflights):
+    client = request.param
+    if client in native_models:
+        if client not in native_preflights:
+            reason = os.getenv(f"WORKSHOP_SKIP_{client.upper()}")
+            if not reason and not shutil.which(client):
+                reason = f"executable '{client}' not found on PATH"
+            if not reason:
+                probe_dir = tmp_path / "preflight"
+                probe_dir.mkdir()
+                reason = await native_probe(client, probe_dir, native_models[client])
+            native_preflights[client] = reason
+        if native_preflights[client]:
+            pytest.skip(f"{client} preflight: {native_preflights[client]}")
     require_model()
     setup()
     scenario.configure(
@@ -150,7 +183,6 @@ async def world(request, monkeypatch, tmp_path, native_models):
     run_id = uuid.uuid4().hex
     # The human desk uses workshop. Each scenario has its own server and SQLite file.
     workspace = "workshop"
-    client = request.param
     folder = ROOT / ".lab/shared-mcp" / f"{client}-{run_id}"
     folder.mkdir(parents=True)
     async with crm_server(folder, workspace) as url:
@@ -170,7 +202,7 @@ async def world(request, monkeypatch, tmp_path, native_models):
                 )
             ]
         else:
-            adapter = NativeClient(client, mcp_url, tmp_path, model=native_models.get(client))
+            adapter = NativeClient(client, mcp_url, tmp_path, model=native_models[client])
         try:
             yield RecordedClient(adapter, folder), state, before
         finally:

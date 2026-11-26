@@ -24,11 +24,16 @@ class NativeClient(scenario.AgentAdapter):
         self.session_id = None
         self.env = {
             k: os.environ[k]
-            for k in ("PATH", "HOME", "USER", "TMPDIR", "LANG")
+            for k in (
+                "PATH", "HOME", "USER", "TMPDIR", "LANG",
+                "CLAUDE_CONFIG_DIR", "CLAUDE_CODE_OAUTH_TOKEN",
+                "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL",
+            )
             if k in os.environ
         }
         # The isolated project uses the workshop files with only the case URL changed.
-        for relative in (".mcp.json", ".claude/settings.json", ".codex/config.toml"):
+        project_files = (".mcp.json", ".claude/settings.json", ".codex/config.toml") if url else ()
+        for relative in project_files:
             dest = self.cwd / relative
             dest.parent.mkdir(exist_ok=True)
             template = (ROOT / relative).read_text()
@@ -51,7 +56,9 @@ class NativeClient(scenario.AgentAdapter):
             subprocess.run(["git", "init", "-q"], cwd=self.cwd, check=True)
 
     async def call(self, input):
-        prompt = input.last_new_user_message_str()
+        return await self.turn(input.last_new_user_message_str())
+
+    async def turn(self, prompt, *, timeout=180):
         model_args = ["--model", self.model] if self.model else []
         if self.name == "claude":
             args = [
@@ -60,8 +67,7 @@ class NativeClient(scenario.AgentAdapter):
                 *model_args,
                 "--tools",
                 "",
-                "--allowedTools",
-                "mcp__crm__*",
+                *(["--allowedTools", "mcp__crm__*"] if self.url else ["--strict-mcp-config"]),
                 "--output-format",
                 "json",
                 *(["--resume", self.session_id] if self.session_id else []),
@@ -101,10 +107,26 @@ class NativeClient(scenario.AgentAdapter):
             env=self.env,
             capture_output=True,
             text=True,
-            timeout=180,
+            stdin=subprocess.DEVNULL,
+            timeout=timeout,
         )
         if result.returncode:
-            raise RuntimeError(result.stderr[-1200:] or result.stdout[-1200:])
+            detail = result.stderr.strip()
+            if self.name == "claude":
+                try:
+                    detail = json.loads(result.stdout)["result"] or detail
+                except (ValueError, KeyError, TypeError):
+                    pass
+            else:
+                for line in result.stdout.splitlines():
+                    try:
+                        event = json.loads(line)
+                    except ValueError:
+                        continue
+                    if event.get("type") == "turn.failed":
+                        detail = event["error"]["message"]
+            diagnostic = str(detail or result.stdout).strip() or "no diagnostic output"
+            raise RuntimeError(f"exit {result.returncode}: {diagnostic[-1200:]}")
         if self.name == "claude":
             turn = json.loads(result.stdout)
             if turn.get("is_error"):

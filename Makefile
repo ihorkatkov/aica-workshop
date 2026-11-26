@@ -21,7 +21,7 @@ help:
 	 'make scenarios stage    Stretch challenge: owner reviews stage changes' \
 	 'make scenarios list AGENTS=all     List challenges and clients' \
 	 'make scenarios all AGENTS=all      Run three cases on ADK, Claude Code and Codex' \
-	 'Defaults: kickoff, AGENTS=adk. Native clients require make scenario-env and CLI sign-in.' \
+	 'Defaults: kickoff, AGENTS=adk. Native scenarios prepare host Python automatically and check CLI access.' \
 	 'make check-stage        Probe owner authority on a copy of a prepared CRM' \
 	 'make check-kickoff      Probe the CRM write boundary (no model calls)' \
 	 'make check-policy       Check your server policy' \
@@ -73,8 +73,7 @@ test:
 
 .PHONY: scenario-env
 scenario-env:
-	@python3.12 -m venv .venv
-	@.venv/bin/python -m pip install -r requirements.txt
+	@sh workshop/scenario-env.sh
 
 # Treat the word after "scenarios" as a suite name, not a separate Make action.
 AGENTS ?= adk
@@ -95,7 +94,7 @@ $(filter-out help,$(SCENARIO_GROUPS)):
 endif
 SCENARIO_GROUP := $(if $(SCENARIO_ARGS),$(SCENARIO_ARGS),kickoff)
 SCENARIO_PATH := $(if $(filter all,$(SCENARIO_GROUP)),scenarios,scenarios/test_$(SCENARIO_GROUP).py)
-SCENARIO_TEST := $(if $(or $(filter list,$(SCENARIO_GROUP)),$(filter adk,$(AGENTS))),$(TEST),$(PYTHON) -m pytest)
+SCENARIO_TEST := $(if $(or $(filter list,$(SCENARIO_GROUP)),$(filter adk,$(AGENTS))),$(TEST),PYTHON="$(PYTHON)" sh workshop/run-scenarios.sh)
 ifneq ($(filter list,$(SCENARIO_GROUP)),)
 SCENARIO_PATH := scenarios
 endif
@@ -103,7 +102,7 @@ scenarios:
 ifeq ($(SCENARIO_GROUP),help)
 	@:
 else
-	@$(SCENARIO_TEST) $(SCENARIO_PATH) --agents "$$AGENTS" -k "$$CASE" $(if $(filter list,$(SCENARIO_GROUP)),--collect-only -q,-v -s)
+	@$(SCENARIO_TEST) $(SCENARIO_PATH) --agents "$$AGENTS" -k "$$CASE" $(if $(filter list,$(SCENARIO_GROUP)),--collect-only -q,-v -s -rs)
 endif
 verify:
 	@$(LAB) smoke-trace

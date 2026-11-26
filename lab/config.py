@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
+os.environ.setdefault("LANGWATCH_ENDPOINT", "http://localhost:5560")
 
 
 def model_name():
