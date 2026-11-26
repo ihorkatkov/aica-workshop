@@ -1,6 +1,6 @@
 # AICA workshop vision
 
-**How do you stop an AI agent from breaking production?**
+**Let agents decide. Make the system check.** A hands-on workshop on building AI agents.
 
 AICA Summit hands-on lab · 26 November 2026 · Ihor Katkov
 

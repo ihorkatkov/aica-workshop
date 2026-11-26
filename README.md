@@ -1,4 +1,6 @@
-# How do you stop an AI agent from breaking production?
+# Let agents decide. Make the system check.
+
+A hands-on workshop on building AI agents.
 
 In this AICA Summit workshop, sales wants kickoff for a customer pilot today. Security hasn’t cleared it. You’ll follow the request from the agent’s reply to its tool call and the saved deal, then change the CRM so it enforces the rule. All customer records are synthetic.
 
