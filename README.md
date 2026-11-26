@@ -6,7 +6,7 @@ In this AICA Summit workshop, sales wants kickoff for a customer pilot today. Se
 
 ## Start here
 
-You need one laptop with Git, Docker running, Docker Compose v2, Make, curl, OpenSSL, a POSIX shell (macOS, Linux or WSL), internet access, and the facilitator’s workshop key.
+You need one laptop with Git, Docker running, Docker Compose v2, Make, curl, OpenSSL, a POSIX shell (macOS, Linux or WSL), internet access, and the facilitator’s workshop key. The key is `aica2026`.
 
 ```sh
 git clone https://github.com/ihorkatkov/aica-workshop
@@ -59,5 +59,19 @@ It runs on ADK by default in a fresh CRM. Run it once on the starter and again a
 - **Claude Code or Codex** — after setup, launch your signed-in `claude` or `codex` from the repository root. Allow the project’s CRM connection if prompted. Both use the CRM in your browser. ADK Web loads the same [tools](lab/tools.py) directly. All three scenario clients discover them over MCP.
 - **Scenario clients** — `make scenarios list AGENTS=all` lists the cases. Use `make scenarios kickoff AGENTS=codex` or `make scenarios stage AGENTS=claude` for a native client. Install uv or Python 3.12 with venv support and sign into the selected CLI. The runner reports unavailable clients as skipped.
 - **Commands** — `make help` lists shortcuts. `make preflight` checks model, tool, and trace access. `make down` stops services and preserves data. For host setup and model configuration, see the [facilitator notes](infra/README.md).
+
+## Run it on boxd instead of your laptop
+
+No Docker locally? [boxd.sh](https://boxd.sh) gives you a cloud Linux machine with Docker ready: composable computers for devs and agents. Promo code **IHOR50** gives 50 + 30 credits.
+
+1. Install the CLI (macOS or Linux): `curl -fsSL https://boxd.sh/downloads/install.sh | sh`
+2. Create a machine: `boxd machine new aica --delete-after 1d`. The first run opens a browser sign-in.
+3. Open a shell on it: `ssh aica.boxd`
+4. There: `git clone https://github.com/ihorkatkov/aica-workshop && cd aica-workshop && make setup`
+5. The lab binds to localhost on the machine. From your laptop, forward the ports setup printed, for example: `ssh -N -L 5560:localhost:5560 -L 8001:localhost:8001 -L 8500:localhost:8500 aica.boxd`
+6. Open the same localhost links as in this guide.
+7. Finished? `boxd machine remove aica -y`
+
+Keep the lab on localhost. Don’t publish the chat on a public URL: anyone who finds it can use your model key. After the workshop, try forking a prepared machine per agent run (`boxd machine fork`) for your own workflow.
 
 **Debrief.** Pick one write in your own workflow. What evidence would allow it? What should someone hear when it’s blocked? Who owns the decision?
