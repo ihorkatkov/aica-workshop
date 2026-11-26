@@ -93,8 +93,10 @@ class NativeClient(scenario.AgentAdapter):
                 "features.shell_tool=false",
                 "-c",
                 "developer_instructions=" + json.dumps(INSTRUCTIONS),
-                "-c",
-                'mcp_servers.crm.default_tools_approval_mode="approve"',
+                *(
+                    ["-c", 'mcp_servers.crm.default_tools_approval_mode="approve"']
+                    if self.url else []
+                ),
                 *(["resume", self.session_id] if self.session_id else []),
                 "-o",
                 str(reply),
